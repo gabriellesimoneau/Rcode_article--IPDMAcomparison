@@ -1,5 +1,6 @@
 library(lme4)
 library(MASS)
+library(copula)
 source("simulate_example.R")
 source("poisson_functions.R")
 
@@ -14,12 +15,18 @@ source("poisson_functions.R")
 ##      - Figure 3: threshold effect simulation study
 ##      - Table 6: results simulation correlation parameters
 
+
+
+
 #### --------------- Simulate dataset ---------------####
 ## similar simulation mechanism used in simulation study
 
 example_data <- read.csv("simulated_dataset.csv")
 Bdata <- data.for.bivariate.example(example_data)
 Pdata <- data.for.poisson.example(example_data)
+
+
+
 
 #### --------------- Figure 1 ---------------####
 ## individual ROC curves from the simulated data ##
@@ -39,7 +46,7 @@ for(i in 2:13)
 
 par(mar=c(4.1, 4.1, 2.1, 2.1), xpd = TRUE)
 design <- c(2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1)
-color <- c("darkgrey", "black", "darkgrey", "black", "darkgrey", "darkgrey", "black", "darkgrey", "black", "darkgrey", "black", "darkgrey")
+color <- c("darkgrey", "black", "darkgrey", "black", "darkgrey", "black", "darkgrey", "black", "darkgrey", "black", "darkgrey", "black")
 plot(D1.x, D1.y, type = "l", lty = 1, xlab = "1-Specificity", ylab = "Sensitivity", cex.axis = 1, cex.lab = 1, lwd = 1.2)
 points(D1.x[7], D1.y[7], pch = 16, col = "white")
 points(D1.x[14], D1.y[14], pch = 16, col = "white")
@@ -64,32 +71,35 @@ for(i in seq(3, 25, by = 2))
   count <- count+1
 }
 
+
+
+
 #### --------------- Table 3 ---------------####
 ## parameter estimates with the Bivariate approach ##
 
 # run one model per threshold
-cut7 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==7, weights = ni)
+cut7 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==7, weights = n)
 cut7s <- summary(cut7)
 
-cut8 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==8, weights = ni)
+cut8 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==8, weights = n)
 cut8s <- summary(cut8)
 
-cut9 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==9, weights = ni)
+cut9 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==9, weights = n)
 cut9s <- summary(cut9)
 
-cut10 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==10, weights = ni)
+cut10 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==10, weights = n)
 cut10s <- summary(cut10)
 
-cut11 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==11, weights = ni)
+cut11 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==11, weights = n)
 cut11s <- summary(cut11)
 
-cut12 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==12, weights = ni)
+cut12 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==12, weights = n)
 cut12s <- summary(cut12)
 
-cut13 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==13, weights = ni)
+cut13 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==13, weights = n)
 cut13s <- summary(cut13)
 
-cut14 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==14, weights = ni)
+cut14 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==14, weights = n)
 cut14s <- summary(cut14)
 
 # logit sensitivity and 1-specificity, standarho_dis error logit sensitivity, standard error logit specificity for thresholds 7 to 14
@@ -97,18 +107,17 @@ logit_sens_bivariate <- c(fixef(cut7)[2], fixef(cut8)[2], fixef(cut9)[2], fixef(
 logit_1_spec_bivariate <- c(fixef(cut7)[1], fixef(cut8)[1], fixef(cut9)[1], fixef(cut10)[1], fixef(cut11)[1], fixef(cut12)[1], fixef(cut13)[1], fixef(cut14)[1])
 sd_logit_sens_bivariate <- c(cut7s$coef[2,2], cut8s$coef[2,2], cut9s$coef[2,2], cut10s$coef[2,2], cut11s$coef[2,2], cut12s$coef[2,2], cut13s$coef[2,2], cut14s$coef[2,2])
 sd_logit_1_spec_bivariate  <- c(cut7s$coef[1,2], cut8s$coef[1,2], cut9s$coef[1,2], cut10s$coef[1,2], cut11s$coef[1,2], cut12s$coef[1,2], cut13s$coef[1,2], cut14s$coef[1,2])
-corr <- c(cut7s$varcor$study[3], cut8s$varcor$study[3], cut9s$varcor$study[3], cut10s$varcor$study[3], cut11s$varcor$study[3], cut12s$varcor$study[3], cut13s$varcor$study[3], cut14s$varcor$study[3])
+corr <- c(cut7s$varcor$study[3]/(sqrt(cut7s$varcor$study[1])*sqrt(cut7s$varcor$study[4])), cut8s$varcor$study[3]/(sqrt(cut8s$varcor$study[1])*sqrt(cut8s$varcor$study[4])), cut9s$varcor$study[3]/(sqrt(cut9s$varcor$study[1])*sqrt(cut9s$varcor$study[4])), cut10s$varcor$study[3]/(sqrt(cut10s$varcor$study[1])*sqrt(cut10s$varcor$study[4])), cut11s$varcor$study[3]/(sqrt(cut11s$varcor$study[1])*sqrt(cut11s$varcor$study[4])), cut12s$varcor$study[3]/(sqrt(cut12s$varcor$study[1])*sqrt(cut12s$varcor$study[4])), cut13s$varcor$study[3]/(sqrt(cut13s$varcor$study[1])*sqrt(cut13s$varcor$study[4])), cut14s$varcor$study[3]/(sqrt(cut14s$varcor$study[1])*sqrt(cut14s$varcor$study[4])))
 
-# var.se=summary(mod)$varcor$study[1]
-# var.sp=summary(mod)$varcor$study[4]
-# core=summary(mod)$varcor$study[3]/(sqrt(var.se)*sqrt(var.sp))
+
+
 
 #### --------------- Table 5 ---------------####
 
 Pois_pestimates <- poissonModel(Pdata)
 
 # estimates hazard, frailty variance 
-hazards_diseased <- Pois_pestimates$lambda1ha
+hazards_diseased <- Pois_pestimates$lambda1
 hazards_healthy <- Pois_pestimates$lambda0
 frailty_variance_1 <- Pois_pestimates$frailty1
 frailty_variance_0 <- Pois_pestimates$frailty0
@@ -119,7 +128,7 @@ Pdata2 <- Pdata[which(Pdata$cutoff %in% 1:14),]
 Pdata2$lam <- c(rep(Pois_pestimates$lambda1,13), rep(Pois_pestimates$lambda0,13))
 Pdata2$mu <- Pdata2$r*Pdata2$lam
 
-rho_thres <- optimize(rt, interval = c(0.01,0.99), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2)
+rho_thres <- optimize(rt, interval = c(0.01,0.99), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2)$minimum
 ab <- optimize(rd, interval = c(0, sqrt(1/Pois_pestimates$frailty1*1/Pois_pestimates$frailty0)), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2)$minimum
 rho_dis <- ab*sqrt(Pois_pestimates$frailty1*Pois_pestimates$frailty0)
 
@@ -142,6 +151,9 @@ SE_variance_frailty_1 <- sd(results_SE[,17])
 SE_variance_frailty_0 <- sd(results_SE[,18])
 SE_rho_thres <- sd(results_SE[,19])
 SE_rho_dis <- sd(results_SE[,20])
+
+
+
 
 #### --------------- Table 2 ---------------####
 
@@ -166,6 +178,9 @@ SE_pooled_sens_poisson <- apply(results_SE[,21:28], 2, sd)
 # confidence intervals
 CI.sens_poisson <- pooled_sensitivity_poisson + c(-1,1)*1.96*SE_pooled_sens_poisson 
 CI.spec_poisson <- pooled_specificity_poisson + c(-1,1)*1.96*SE_pooled_spec_poisson 
+
+
+
 
 #### --------------- Figure 2 ---------------####
 
