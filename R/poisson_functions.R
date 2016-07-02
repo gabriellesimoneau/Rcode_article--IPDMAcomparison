@@ -189,23 +189,23 @@ rho_dis_estimation <- function(ab, data, th1, th0)
   # th1: inverse of estimates of frailty1 when running the poisson model with the function poissonModel
   # th0: inverse of estimates of frailty0 when running the poisson model with the function poissonModel
   
-  loglike=0
+  loglike <- 0
   for(i in 1:13) 
   {
-    bloc=data[which(data$study==i),]
-    blocD=bloc[which(bloc$dis==1),]
-    blocND=bloc[which(bloc$dis==0),]
-    sj=min(dim(blocD)[1],dim(blocND)[1])
+    bloc <- data[which(data$study==i), ]
+    blocD <- bloc[which(bloc$dis==1), ]
+    blocND <- bloc[which(bloc$dis==0), ]
+    sj <- min(dim(blocD)[1], dim(blocND)[1])
     for(j in 1:sj) 
     {              
-      p_j=0
-      yij1=blocD$y[j]
-      yij0=blocND$y[j]
-      muij1=blocD$mu[j]
-      muij0=blocND$mu[j]
-      theta1=th1
-      theta2=th0
-      loglike=loglike+loglike.dis(yij1,yij0,muij1,muij0,theta1,theta2,ab)
+      p_j <- 0
+      yij1 <- blocD$y[j]
+      yij0 <- blocND$y[j]
+      muij1 <- blocD$mu[j]
+      muij0 <- blocND$mu[j]
+      theta1 <- th1
+      theta2 <- th0
+      loglike <- loglike + loglike.dis(yij1, yij0, muij1, muij0, theta1, theta2, ab)
     }
   }  
   return(loglike)
@@ -233,7 +233,7 @@ parametric_boot <- function(copula_input, data)
   # apply poisson model
   esti <- poissonModel(data)
   data2 <- data[which(data$cutoff %in% 7:14),]
-  data2$lam <- c(rep(esti$lambda1[7:14],13),rep(esti$lambda0[7:14],13))
+  data2$lam <- c(rep(esti$lambda1[7:14], 13), rep(esti$lambda0[7:14], 13))
   data2$mu <- data2$r*data2$lam
   theta1 <- 1/esti$frailty1
   theta0 <- 1/esti$frailty0
@@ -244,5 +244,5 @@ parametric_boot <- function(copula_input, data)
   rho_dis <- ab*sqrt(esti$frailty1*esti$frailty0)
   
   # return all parameters for which we need SD
-  return(c(lam1[7:14], lam0[7:14], esti$frailty1, esti$frailty0, rho_thres, rho_dis, esti$pooled_sensitivity, esti$pooled_specificity))
+  return(c(esti$lambda1[7:14], esti$lambda0[7:14], esti$frailty1, esti$frailty0, rho_thres, rho_dis, esti$pooled_sensitivity, esti$pooled_specificity))
 }
