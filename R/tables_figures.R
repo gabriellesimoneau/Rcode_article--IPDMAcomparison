@@ -1,6 +1,7 @@
 library(lme4)
 library(MASS)
 library(copula)
+setwd("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/R")
 source("simulate_example.R")
 source("poisson_functions.R")
 
@@ -21,7 +22,7 @@ source("poisson_functions.R")
 #### --------------- Simulate dataset ---------------####
 ## similar simulation mechanism used in simulation study
 
-example_data <- read.csv("simulated_dataset.csv")
+example_data <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/Data/simulated_dataset.csv")
 Bdata <- data.for.bivariate.example(example_data)
 Pdata <- data.for.poisson.example(example_data)
 
@@ -122,17 +123,23 @@ hazards_healthy <- Pois_pestimates$lambda0
 frailty_variance_1 <- Pois_pestimates$frailty1
 frailty_variance_0 <- Pois_pestimates$frailty0
 
-# set up the data to estimate rho_thres and rho_dis
-# keep only information threshold 7 to 14
-Pdata2 <- Pdata[which(Pdata$cutoff %in% 1:14),]
-Pdata2$lam <- c(rep(Pois_pestimates$lambda1,13), rep(Pois_pestimates$lambda0,13))
-Pdata2$mu <- Pdata2$r*Pdata2$lam
+# set up the data to estimate rho_thres and rho_dis: keep only information threshold 7 to 14
+Pdata$lam <- c(rep(Pois_pestimates$lambda1,13), rep(Pois_pestimates$lambda0,13))
+Pdata$mu <- Pdata$r*Pdata$lam
+Pdata2 <- Pdata[which(Pdata$cutoff %in% 7:14),]
 
-rho_thres <- optimize(rt, interval = c(0.01,0.99), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2)$minimum
-ab <- optimize(rd, interval = c(0, sqrt(1/Pois_pestimates$frailty1*1/Pois_pestimates$frailty0)), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2)$minimum
+# stabilize estimation of rho_thres (but less valid...)
+Pdata2$y <- ceiling(Pdata2$y)
+Pdata2$r <- ceiling(Pdata2$r)
+
+# estimate the correlation parameter rho_thres
+rho_thres <- optimize(rho_thres_estimation, interval = c(0.01,0.99), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2, maximum = TRUE)$maximum
+
+# estimate the correlation parameter rho_dis
+ab <- optimize(rho_dis_estimation, interval = c(0, sqrt(1/Pois_pestimates$frailty1*1/Pois_pestimates$frailty0)), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2, maximum = TRUE)$maximum
 rho_dis <- ab*sqrt(Pois_pestimates$frailty1*Pois_pestimates$frailty0)
 
-## estimate the standard errors via parametric bootstrap
+# estimate the standard errors via parametric bootstrap
 # define correlation matrix + margins specification for parametric bootstrap
 R <- c(rho_thres^(1:13), rho_dis*rho_thres^(0:13), rho_thres^(1:12), rho_dis*rho_thres, rho_dis*rho_thres^(0:12), rho_thres^(1:11), rho_dis*rho_thres^(2:1), rho_dis*rho_thres^(0:11), rho_thres^(1:10), rho_dis*rho_thres^(3:1), rho_dis*rho_thres^(0:10), rho_thres^(1:9), rho_dis*rho_thres^(4:1), rho_dis*rho_thres^(0:9), rho_thres^(1:8), rho_dis*rho_thres^(5:1), rho_dis*rho_thres^(0:8), rho_thres^(1:7), rho_dis*rho_thres^(6:1), rho_dis*rho_thres^(0:7), rho_thres^(1:6), rho_dis*rho_thres^(7:1), rho_dis*rho_thres^(0:6), rho_thres^(1:5), rho_dis*rho_thres^(8:1), rho_dis*rho_thres^(0:5), rho_thres^(1:4), rho_dis*rho_thres^(9:1), rho_dis*rho_thres^(0:4), rho_thres^(1:3), rho_dis*rho_thres^(10:1), rho_dis*rho_thres^(0:3), rho_thres^(1:2), rho_dis*rho_thres^(11:1), rho_dis*rho_thres^(0:2), rho_thres, rho_dis*rho_thres^(12:1), rho_dis*rho_thres^(0:1), rho_dis*rho_thres^(13:0), rho_thres^(1:13), rho_thres^(1:12), rho_thres^(1:11), rho_thres^(1:10), rho_thres^(1:9), rho_thres^(1:8), rho_thres^(1:7), rho_thres^(1:6), rho_thres^(1:5), rho_thres^(1:4), rho_thres^(1:3), rho_thres^(1:2), rho_thres)
 margins <- c(list(list(shape = 1/frailty_variance_1, rate = 1/frailty_variance_1))[rep(1,14)],list(list(shape = 1/frailty_variance_0, rate = 1/frailty_variance_0))[rep(1,14)])
@@ -140,9 +147,10 @@ copula_input <- mvdc(normalCopula(R, dim = 28, dispstr="un"),  margins = rep("ga
 
 results_SE <- as.data.frame(matrix(NA, nrow = 500, ncol = 36))
 colnames(results_SE) <- c("lam1_7", "lam1_8", "lam1_9", "lam1_10", "lam1_11", "lam1_12", "lam1_13", "lam1_14", "lam0_7", "lam0_8", "lam0_9", "lam0_10", "lam0_11", "lam0_12", "lam0_13", "lam0_14", "frailty1", "frailty0", "rho_thres", "rho_dis", "sens7", "sens8", "sens9", "sens10", "sens11", "sens12", "sens13", "sens14", "spec7", "spec8", "spec9", "spec10", "spec11", "spec12", "spec13", "spec14")
+set.seed(2072016)
 for(i in 1:500)
 {
-  results_SE[i,] <- parametric_boot(data = Pdata2, R = R, copula_input = copula_input)
+  results_SE[i,] <- parametric_boot(data = Pdata, copula_input = copula_input)
 }
 
 SE_hazard_diseased <- apply(results_SE[,1:8], 2, sd)
