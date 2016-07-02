@@ -52,143 +52,163 @@ poissonModel <- function(data)
 
 
 
-## functions to estimate correlation parameter rho_thres
+## the following 3 functions are required for the estimation of rho_dis
 
-# function to repeat vector v n times (following M.Fiocco)
+# function to repeat vector v n times (written by M.Fiocco)
 rowrep <- function(v,n)
 {
-  # Input:
-  # 	v: vector
+  # Arguments
+  # v: vector
   #	n: number of rows in the matrix
   # Output:
   # matrix of repeated rows, dimension: length(v)X n
-  return(t(colrep(v,n)))
+  return(t(colrep(v, n)))  
 }
 
-# function to repeat vector v n times (following M.Fiocco)
-colrep <- function(v,n)
+# function to repeat vector v n times (written by M.Fiocco)
+colrep <- function(v, n)  
 {
-  # Input:
-  # 	v: vector
+  # Arguments
+  # v: vector
   #	n: number of columns in the matrix
   # Output:
   # matrix of repeated columns, dimension: length(v)X n
-  return(matrix(rep(v,n),length(v),n))
+  return(matrix(rep(v,n), length(v), n))
 }
 
-# function to calculate the log-likelihood contribution of one pair of observation (following M.Fiocco)
-loglike.jk <- function(y1, y2, mu1, mu2, rho, theta, j, k)
+# function to calculate the log-likelihood contribution of one pair of observation (written M.Fiocco): useful for the estimation of rho_dis
+loglike.dis <- function(y1, y2, mu1, mu2, theta1, theta2, ab) 
 {
   # joint distribution of (yijd,yikd)
-  mu12 <- mu1+mu2
-  rho.jk <- rho^(abs(j-k))
-  Pist1 <- dnbinom(y1:0, size = theta*(1-rho.jk), mu = mu1*(1-rho.jk))
-  Pist2 <- dnbinom(y2:0, size = theta*(1-rho.jk), mu = mu2*(1-rho.jk))
+  mu1t <- mu1/theta1
+  mu2t <- mu2/theta2
+  alphaa.b <- theta1-ab
+  alphab.a <- theta2-ab
+  mu12t <- mu1t+mu2t
+  if(alphaa.b>0) 
+  {
+    Pist1 <- dnbinom(y1:0, size = alphaa.b, mu = mu1t*alphaa.b)
+  }
+  if(alphaa.b<=0) 
+  {
+    alphaa.b <- 0.000001
+    Pist1 <- dnbinom(y1:0, size = alphaa.b, mu = mu1t*alphaa.b)
+  }
+  Pist2 <- dnbinom(y2:0, size = alphab.a, mu = mu2t*alphab.a)
   P1 <- colrep(Pist1, y2+1)
   P2 <- rowrep(Pist2, y1+1)
-  outerm <-outer(0:y1, 0:y2, "+") 
+  outerm <-outer(0:y1, 0:y2, "+")#dim=y1+1Xy2+1
   outerv <-as.vector(outerm)
   helpv <- as.vector(colrep(0:y1, y2+1)) 
-  P3 <- matrix(dnbinom(outerv, size = theta*rho.jk, mu = mu12*rho.jk), y1+1, y2+1)
-  P4 <- matrix(dbinom(helpv, outerv, mu1/mu12), y1+1, y2+1)
+  P3 <- matrix(dnbinom(outerv, size = ab, mu = mu12t*ab), y1+1, y2+1)
+  P4 <- matrix(dbinom(helpv, outerv, mu1t/mu12t), y1+1, y2+1)
   P <- P1*P2*P3*P4  	           
   return(logP = log(sum(P)))
 }
 
-rt <- function(rho, data, th1, th0)
+
+
+
+## function to estimate the correlation parameter rho_thres GOOD
+
+rho_thres_estimation <- function(rho, data, th0, th1)
 {
   ## Arguments
   # rho: correlation parameter, to maximize
   # data: dataset as returned by the functions data.for.poisson.example or data.for.poisson.simulation
+  #       with 2 additional columns: lam and mu
   # th1: inverse of estimates of frailty1 when running the poisson model with the function poissonModel
   # th0: inverse of estimates of frailty0 when running the poisson model with the function poissonModel
   
-  loglike <- 0
-  for(i in seq(1:13)) 
-  {
-    datai <- data[which(data$study==i), ]
-    dataD <- datai[which(datai$dis==1), ]
-    dataND <- datai[which(datai$dis==0), ]
-    for(j in 7:13)
-    {
-      for(k in (j+1):14)
-      {
-        yij1 <- dataD$y[j-6]
-        yik1 <- dataD$y[k-6]
-        muij1 <- dataD$mu[j-6]
-        muik1 <- dataD$mu[k-6]
-        yij0 <- dataND$y[j-6]
-        yik0 <- dataND$y[k-6]
-        muij0 <- dataND$mu[j-6]
-        muik0 <- dataND$mu[k-6]
-        #print(i)
-        loglike <- loglike + loglike.jk(yij1, yik1, muij1, muik1, rho, th1, j, k) + loglike.jk(yij0, yik0, muij0, muik0, rho, th0, j, k)
-      }
-    }
-  }
-  return(-loglike)
-}
-
-rt_simulation <- function(rho, data, th1, th0)
-{
-  loglike <- 0
-  for(i in seq(1:13))
-  {
-    datai <- data[which(data$study==i),]
-    dataD <- datai[which(datai$dis==1),]
-    dataND <- datai[which(datai$dis==0),]
-    for(j in 1:7)
-    {
-      for(k in (j+1):8)
-      {
-        yij1 <- dataD$y[j]
-        yik1 <- dataD$y[k]
-        muij1 <- dataD$mu[j]
-        muik1 <- dataD$mu[k]
-        yij0 <- dataND$y[j]
-        yik0 <- dataND$y[k]
-        muij0 <- dataND$mu[j]
-        muik0 <- dataND$mu[k]
-        #print(i)
-        loglike <- loglike + loglike.jk(yij1, yik1, muij1, muik1, rho, th1, j, k) + loglike.jk(yij0, yik0, muij0, muik0, rho, th0, j, k)
-      }
-    }
-  }
-  return(-loglike)
-}
-
-
-
-
-## estimate correlation parameter rho_dis
-rd <- function(ab, data, th1, th0) ## similar function to estimate rho_dis, same input
-{
   like <- 0
-  for(i in 1:13) # loop over 13 studies
+  for(i in 1:13) # Loop over the 13 studies in the example dataset (and simulation)
   {
-    bloc <- data[which(data$study==i),]
+    bloc <- data[which(data$study==i), ]
     blocD <- bloc[which(bloc$dis==1),]
     blocND <- bloc[which(bloc$dis==0),]
-    for(j in 1:8) # 8 thresholds
+    for(j in 1:7) 
     {
-      p_j <- 0
-      yij1 <- blocD$y[j]
-      yij0 <- blocND$y[j]
-      muij1 <- blocD$mu[j]/th1
-      muij0 <- blocND$mu[j]/th0
-      alphaa.b <- th1-ab
-      alphab.a <- th0-ab
-      for(l in 0:yij1)
+      if(dim(blocD)[1]>j)
       {
-        for(m in 0:yij0)
+        for(k in (j+1):dim(blocD)[1])
         {
-          p_j <- p_j + dnbinom(l, mu = muij1*alphaa.b, size = alphaa.b) * dnbinom(m, mu = muij0*alphab.a, size = alphab.a) * dnbinom(yij1+yij0-l-m, mu = (muij1+muij0)*ab, size = ab) * dbinom(yij1-l, size = yij1+yij0-l-m, p = muij1/(muij1+muij0))
+          p_sens <- 0
+          yij1 <- blocD$y[j]
+          yik1 <- blocD$y[k]
+          rhojk <- rho^abs(j-k)
+          muij1 <- blocD$mu[j]
+          muik1 <- blocD$mu[k]
+          theta1 <- th1
+          for(l in 0:yij1)
+          {
+            for(m in 0:yik1)
+            {
+              p_sens <- p_sens + dnbinom(l, mu = muij1*(1-rhojk), size = theta1*(1-rhojk))*dnbinom(m, mu = muik1*(1-rhojk), size = theta1*(1-rhojk))*dnbinom(yij1+yik1-l-m, mu = (muij1+muik1)*rhojk, size = theta1*rhojk)*dbinom(yij1-l, size = yij1+yik1-l-m, p = muij1/(muij1+muik1))
+            }
+          }
+        }
+        like <- like + log(p_sens)
+      }
+      if(dim(blocND)[1]>j)
+      {
+        for(k in (j+1):dim(blocND)[1])
+        {
+          p_spec <- 0
+          yij0 <- blocND$y[j]
+          yik0 <- blocND$y[k]
+          rhojk <- rho^abs(j-k)
+          muij0 <- blocND$mu[j]
+          muik0 <- blocND$mu[k]
+          theta0 <- th0
+          for(l in 0:yij0)
+          {
+            for(m in 0:yik0)
+            {
+              p_spec <- p_spec + dnbinom(l, mu = muij0*(1-rhojk), size = theta0*(1-rhojk))*dnbinom(m, mu = muik0*(1-rhojk), size = theta0*(1-rhojk))*dnbinom(yij0+yik0-l-m, mu = (muij0+muik0)*rhojk, size = theta0*rhojk)*dbinom(yij0-l, size = yij0+yik0-l-m, p = muij0/(muij0+muik0))  
+            }
+          }
+          like <- like + log(p_spec)
         }
       }
-      like <- like + log(p_j)
+    } 
+  } 
+  return(like)
+}
+
+
+
+
+## function to estimate correlation parameter rho_dis GOOD
+
+rho_dis_estimation <- function(ab, data, th1, th0) 
+{
+  ## Arguments
+  # rho: correlation parameter, to maximize
+  # data: dataset as returned by the functions data.for.poisson.example or data.for.poisson.simulation
+  #       with 2 additional columns: lam and mu
+  # th1: inverse of estimates of frailty1 when running the poisson model with the function poissonModel
+  # th0: inverse of estimates of frailty0 when running the poisson model with the function poissonModel
+  
+  loglike=0
+  for(i in 1:13) 
+  {
+    bloc=data[which(data$study==i),]
+    blocD=bloc[which(bloc$dis==1),]
+    blocND=bloc[which(bloc$dis==0),]
+    sj=min(dim(blocD)[1],dim(blocND)[1])
+    for(j in 1:sj) 
+    {              
+      p_j=0
+      yij1=blocD$y[j]
+      yij0=blocND$y[j]
+      muij1=blocD$mu[j]
+      muij0=blocND$mu[j]
+      theta1=th1
+      theta2=th0
+      loglike=loglike+loglike.dis(yij1,yij0,muij1,muij0,theta1,theta2,ab)
     }
   }  
-  return(-like)
+  return(loglike)
 }
 
 
@@ -196,29 +216,32 @@ rd <- function(ab, data, th1, th0) ## similar function to estimate rho_dis, same
 
 ## functions to estimate the standard error of the poisson estimate via parametric bootstrap
 
-parametric_boot <- function(R, copula_input, data)
+parametric_boot <- function(copula_input, data)
 {
+  ## Arguments
+  #
+  
   # Given theta and rho, generate N independent copies z_i*=c(z_i1*,...,z_i8*) from the multivariate gamma
   # N=13 studies
   generate.gamma <- rMvdc(13, copula_input)
   
   # Given lambda and r, derive mu_ij=lambda_ij*r_ij = column mu 
   # generate y_i*=c(y_i1*,...,y_i8*) with y_ij*~Pois(mu_ij*z_ij*) independent.
-  data$zi <- as.vector(c(t(generate.gamma)[1:14,],t(generate.gamma)[15:28,]))
+  data$zi <- as.vector(c(t(generate.gamma)[1:14,], t(generate.gamma)[15:28,]))
   for(i in 1:nrow(data)) data$y[i] <- rpois(1, lambda = data$mu[i]*data$zi[i])
   
   # apply poisson model
   esti <- poissonModel(data)
-  data2 <- data[which(data$cutoff %in% 1:14),]
-  data2$lam <- c(rep(esti$lambda1,13),rep(esti$lambda0,13))
+  data2 <- data[which(data$cutoff %in% 7:14),]
+  data2$lam <- c(rep(esti$lambda1[7:14],13),rep(esti$lambda0[7:14],13))
   data2$mu <- data2$r*data2$lam
   theta1 <- 1/esti$frailty1
   theta0 <- 1/esti$frailty0
   
   # estimate rho_thres and rho_dis
-  rho_thres <- optimize(rt, interval = c(0.01,0.99), th1 = theta1, th0 = theta0, data = data2)
-  ab <- optimize(rd, interval = c(0, sqrt(theta1*theta0)), th1 = theta1, th0 = theta0, data = data2)$minimum
-  rho_dis <- ab*sqrt(theta1*theta0)
+  rho_thres <- optimize(rho_thres_estimation, interval = c(0.01,0.99), th1 = theta1, th0 = theta0, data = data2, maximum = TRUE)$maximum
+  ab <- optimize(rho_dis_estimation, interval = c(0, sqrt(theta1*theta0)), th1 = theta1, th0 = theta0, data = data2, maximum = TRUE)$maximum
+  rho_dis <- ab*sqrt(esti$frailty1*esti$frailty0)
   
   # return all parameters for which we need SD
   return(c(lam1[7:14], lam0[7:14], esti$frailty1, esti$frailty0, rho_thres, rho_dis, esti$pooled_sensitivity, esti$pooled_specificity))
