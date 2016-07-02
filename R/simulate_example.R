@@ -1,5 +1,3 @@
-install.packages("rje")
-install.packages("mvtnorm")
 library(rje)
 library(mvtnorm)
 
