@@ -1,67 +1,7 @@
 library(rje)
 library(mvtnorm)
 
-### code to simulate diagnostic accuracy data for example table/figures
-
-### DELETE THAT???
-simulation_example <- function(rhodis, rhothres, sigma_sens, sigma_spec, nd, nnd, sdd, nthres) 
-{
-  ## rhodis: the correlation between sensitivity and specificity at each threshold
-  ## rhothres: the correlation between sensitivities and specificities across thresholds 
-  ## sigma_sens: variance of the random effects associated to sensitivity
-  ## sigma_spec: variance of the random effects associated to specificity
-  ## nd: mean # truly diseased patients per study 100 or 50
-  ## nnd: mean # truly healthy patients per study
-  ## sdd: standard deviation for # truly diseased patients 80 or 40
-  
-  ## specifity true sensitivity and specificity
-  sens <- round(seq(0.98, 0.15, length = nthres),2)
-  spec <- round(seq(0.15, 0.99, length = nthres),2)
-  ss.overall <- logit(c(sens, 1-spec))
-  
-  ## correlation structure for random noise
-  mat <- matrix(c(sigma_sens, rhodis*sqrt(sigma_sens*sigma_spec), rhodis*sqrt(sigma_sens*sigma_spec), sigma_spec),2,2)
-  matti <- matrix(1, nthres, nthres)
-  matti <- rhothres^(abs(row(matti)-col(matti)))
-  Sig <- mat %x% matti
-  
-  ## generate diagnostic data
-  n <- 13 # number of studies
-  n1i <- round(rnorm(n, mean = nd, sd = sdd), 0) # number of truly diseased patients for each study from a Normal (nd, sdd) -> mimicks PHQ9
-  n0i <- round(rnorm(n, mean = nnd, sd = 150), 0) # number of truly healthy patients for each study from a Normal (nnd, sd=150) -> mimicks PHQ9
-  while (any(c(n1i,n0i) <= 0)) # make sure we have n > 0
-  {
-    n1i <- round(rnorm(n, mean = nd, sd = sdd), 0) 
-    n0i <- round(rnorm(n, mean = nnd, sd = 150), 0)
-  }
-  ss.specific <- rmvnorm(n, ss.overall, Sig) # study-specific logit sens / 1-spec
-  x0 <- x1 <- matrix(NA, n, nthres+1) # matrices for number of diseased (x1)/healthy (x0) falling in each 9 category of 
-  
-  # the diagnostic data for each study
-  for(i in 1:n) # for each study
-  {
-    sensi <- sort(expit(ss.specific[i,1:nthres])) # sens in study i for all 8 thresholds
-    speci <- sort(1 - expit(ss.specific[i,(nthres+1):(2*nthres)])) # spec in study i for all 8 thresholds
-    
-    # p0 probability of falling in each category of the test for healthy group
-    p0 <- c(speci, 1) - c(0, speci)
-    # p1 probability of falling in each category of the test for diseased group
-    p1 <- c(sensi, 1) - c(0, sensi)
-    
-    # number of healthy patients per category
-    x0i <- sample(0:nthres, n0i[i], replace = TRUE, prob = p0)
-    x0[i,] <- table(factor(x0i, levels = 0:nthres))
-    # number of diseased patients per category
-    x1i <- sample(0:nthres, n1i[i], replace = TRUE, prob = p1)
-    x1[i,] <- table(factor(x1i, levels = 0:nthres))
-  }
-  return(list(x0, x1))
-}
-
-
-
-
-### code to simulate diagnostic accuracy data for SIMULATIONS i.e. fixed number of threshold to 8
+### code to simulate diagnostic accuracy data for simulations with fixed number of threshold to 8
 
 simulation <- function(rhodis, rhothres, sigma_sens, sigma_spec, nd, nnd, sdd) 
 {
@@ -74,8 +14,8 @@ simulation <- function(rhodis, rhothres, sigma_sens, sigma_spec, nd, nnd, sdd)
   ## sdd: standard deviation for # truly diseased patients 80 or 40
   
   ## specifity true sensitivity and specificity
-  sens <- round(seq(0.90, 0.20, length=8), 2)
-  spec <- round(seq(0.20, 0.99, length=8), 2)
+  sens <- c(0.94, 0.91, 0.88, 0.84, 0.79, 0.74, 0.67, 0.57)
+  spec <- c(0.74, 0.79, 0.83, 0.87, 0.89, 0.91, 0.93, 0.95)
   ss.overall <- logit(c(sens, 1-spec))
   
   ## correlation structure for random noise
@@ -105,8 +45,8 @@ simulation <- function(rhodis, rhothres, sigma_sens, sigma_spec, nd, nnd, sdd)
     p0 <- c(speci, 1) - c(0, speci)
     # p1 probability of falling in each category of the test for diseased group
     p1 <- c(1,sensi) - c(sensi, 0)
-    # make sure sens/spec are monotone
     
+    # make sure sens/spec are monotone
     while (any(c(p0,p1) <= 0)) 
     {
       ss.specific[i,] <- rmvnorm(1, ss.overall, Sig)
@@ -275,37 +215,6 @@ data.for.poisson.simulation <- function(x0, x1, nthres)
   return(pdata)
 }
 
-
-
-
-## function to apply to bivariate model to some threshold
-
-#GLMM.extract <- function(cut, Gdata) # extract logit sens, logit 1-spec, sd of logit sens, sd of logit 1-spec,correlation
-#{
-  # cut: threshold used
-  # data: data as prepared by data.for.bivariate
-#  temp <- Gdata[which(Gdata$cutoff==cut), ]
-#  mod <- try(glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family=binomial, nAGQ=1, data=temp, weight=ni))
-#  if (class(mod) != "try-error") {
-#    lsens <- fixef(mod)[2]
-#    lspec <- -fixef(mod)[1]
-#    se.lse <- summary(mod)$coefficients[2,2]
-#    se.lsp <- summary(mod)$coefficients[1,2]
-#    var.se <- summary(mod)$varcor$study[1]
-#    var.sp <- summary(mod)$varcor$study[4]
-#    core <- summary(mod)$varcor$study[3]/(sqrt(var.se)*sqrt(var.sp))
-#  }
-#  else { 
-#    lsens <- NA
-#    lspec <- NA
-#    se.lse <- NA
-#    se.lsp <- NA
-#    var.se <- NA
-#    var.sp <- NA
-#    core <- NA
-#  }
-#  return(c(lsens, lspec, se.lse, se.lsp, var.se, var.sp, core))
-#}
 
 
 
