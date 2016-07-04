@@ -4,6 +4,7 @@ library(copula)
 setwd("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/R")
 source("simulate_example.R")
 source("poisson_functions.R")
+## NOTE: ERASE DIRECTORIES
 
 ## As the PHQ9 dataset cannot be publish to this day, we simulated a similar dataset.
 ## We will use this simulated dataset to demonstrate how to reproduce:
@@ -152,6 +153,8 @@ for(i in 1:500)
 {
   results_SE[i,] <- parametric_boot(data = Pdata, copula_input = copula_input)
 }
+#results_SE <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/Results/results_SE.csv")
+#results_SE <- results_SE[,-1]
 
 SE_hazard_diseased <- apply(results_SE[,1:8], 2, sd)
 SE_hazard_healthy <- apply(results_SE[,9:16], 2, sd)
@@ -200,8 +203,8 @@ simulation_scenarios <- read.csv("simulation_scenarios.R")
 #pois <- merge(pois, simulation_scenarios, by = "scenario")
 
 ## focus only on bias of sensitivity and specificity
-true_sens <-  round(seq(0.90, 0.20, length=8), 2)
-true_spec <- round(seq(0.20, 0.99, length=8), 2)
+true_sens <-  c(0.94, 0.91, 0.88, 0.84, 0.79, 0.74, 0.67, 0.57)
+true_spec <- c(0.74, 0.79, 0.83, 0.87, 0.89, 0.91, 0.93, 0.95)
 
 ## the dataframe figure2 contains all info to construct figure 2
 figure2 <- as.data.frame(matrix(NA, nrow = 2*8*2*16))
@@ -240,7 +243,7 @@ figure2 <- merge(figure2, simulation_scenarios, by = "scenario")
 
 ## define vectors of what will be plotted
 figure2_sens <- figure2[which(figure2$sens == 1),]
-figure2_spec <- figure2[which(figure2$sens == 1),]
+figure2_spec <- figure2[which(figure2$sens == 0),]
 
 ##  Bias Sensitivity
 # threshold 1 to 8
