@@ -123,7 +123,7 @@ rho_thres_estimation <- function(rho, data, th0, th1)
   like <- 0
   for(i in 1:13) # Loop over the 13 studies in the example dataset (and simulation)
   {
-    bloc <- data[which(data$study==i), ]
+    bloc <- data[which(data$study==i),]
     blocD <- bloc[which(bloc$dis==1),]
     blocND <- bloc[which(bloc$dis==0),]
     for(j in 1:7) 
