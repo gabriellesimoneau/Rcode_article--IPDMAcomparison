@@ -2,8 +2,8 @@ library(lme4)
 library(MASS)
 library(copula)
 setwd("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/R")
-source("simulate_example.R")
-source("poisson_functions.R")
+source("functions_general.R")
+source("functions_poisson.R")
 ## NOTE: ERASE DIRECTORIES
 
 ## As the PHQ9 dataset cannot be publish to this day, we simulated a similar dataset.
@@ -21,11 +21,10 @@ source("poisson_functions.R")
 
 
 #### --------------- Simulate dataset ---------------####
-## similar simulation mechanism used in simulation study
 
 example_data <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/Data/simulated_dataset.csv")
-Bdata <- data.for.bivariate.example(example_data)
-Pdata <- data.for.poisson.example(example_data)
+Bdata <- data.for.bivariate.application(example_data)
+Pdata <- data.for.poisson.application(example_data)
 
 
 
@@ -38,13 +37,13 @@ row_total <- matrix(NA, nrow = 13, ncol = 2) # total number of diseased/healtht 
 
 for(i in 1:13)
 {
-  D <- Pdata[which(Pdata$study==i & Pdata$dis==1),]
-  ND <- Pdata[which(Pdata$study==i & Pdata$dis==0), ]
+  D <- Pphq9[which(Pphq9$study==i & Pphq9$dis==1),]
+  ND <- Pphq9[which(Pphq9$study==i & Pphq9$dis==0), ]
   
   # diseased by category
-  catD[i,] <- round(c(sum(D$y[1:7]), D$y[8:13], D$r[14]), 0)
+  catD[i,] <- round(c(sum(D$y[1:8]), D$y[9:14], D$r[14]-D$y[14]), 0)
   # healthy by category
-  catND[i,] <- round(c(sum(ND$y[1:7]), ND$y[8:13], ND$r[14]), 0)
+  catND[i,] <- round(c(sum(ND$y[1:8]), ND$y[9:14], ND$r[14]-ND$y[14]), 0)
   # total
   row_total[i,] <- c(sum(catD[i,]), sum(catND[i,]))
 }
@@ -214,9 +213,9 @@ CI.spec_poisson.U <- pooled_specificity_poisson + 1.96*SE_pooled_spec_poisson
 #### --------------- Figure 2 ---------------####
 
 ## import csv with results
-biv <- read.csv("bivariate_all.csv", header = TRUE)
-pois <- read.csv("poisson_all.csv", header = TRUE)
-simulation_scenarios <- read.csv("simulation_scenarios.R")
+biv <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/Bivariate_results/bivariate_all.csv", header = TRUE)
+pois <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/Poisson_results/poisson_all.csv", header = TRUE)
+simulation_scenarios <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/simulation_scenarios.csv")
 #biv <- merge(biv, simulation_scenarios, by = "scenario")
 #pois <- merge(pois, simulation_scenarios, by = "scenario")
 
@@ -225,7 +224,7 @@ true_sens <-  c(0.94, 0.91, 0.88, 0.84, 0.79, 0.74, 0.67, 0.57)
 true_spec <- c(0.74, 0.79, 0.83, 0.87, 0.89, 0.91, 0.93, 0.95)
 
 ## the dataframe figure2 contains all info to construct figure 2
-figure2 <- as.data.frame(matrix(NA, nrow = 2*8*2*16))
+figure2 <- as.data.frame(matrix(NA, nrow = 2*8*2*16, ncol=7))
 colnames(figure2) <- c("scenario", "model", "sens", "threshold", "bias", "abs_bias", "mse")
 figure2$scenario <- rep(seq(1:16), each = 2*16)
 figure2$sens <- rep(c(rep(1,8), rep(0,8)), 2*16)
@@ -236,12 +235,13 @@ count <- 1
 for(i in 1:16)
 {
   sce <- biv[which(biv$scenario == i),]
+  sce <- sce[,-1]
   bias <- apply(sce[,1:16], 1, function(x) x-c(true_sens, true_spec))
-  figure2$bias[count:count+15] <- apply(bias, 2, mean)
+  figure2$bias[count:(count+15)] <- apply(bias, 1, mean)
   abs_bias <- apply(sce[,1:16], 1, function(x) abs(x-c(true_sens, true_spec)))
-  figure2$abs_bias[count:count+15] <- apply(abs_bias, 2, mean)
+  figure2$abs_bias[count:(count+15)] <- apply(abs_bias, 1, mean)
   mse_1 <- apply(sce[,1:16], 1, function(x) (x-c(true_sens, true_spec))^2)
-  figure2$mse[count:count+15] <- apply(mse_1, 2, mean)
+  figure2$mse[count:(count+15)] <- apply(mse_1, 1, mean)
   count <- count + 16
 }
 
@@ -249,11 +249,11 @@ for(i in 1:16)
 {
   sce <- pois[which(pois$scenario == i),]
   bias <- apply(sce[,1:16], 1, function(x) x-c(true_sens, true_spec))
-  figure2$bias[count:count+15] <- apply(bias, 2, mean)
+  figure2$bias[count:(count+15)] <- apply(bias, 1, mean)
   abs_bias <- apply(sce[,1:16], 1, function(x) abs(x-c(true_sens, true_spec)))
-  figure2$abs_bias[count:count+15] <- apply(abs_bias, 2, mean)
+  figure2$abs_bias[count:(count+15)] <- apply(abs_bias, 1, mean)
   mse_1 <- apply(sce[,1:16], 1, function(x) (x-c(true_sens, true_spec))^2)
-  figure2$mse[count:count+15] <- apply(mse_1, 2, mean)
+  figure2$mse[count:(count+15)] <- apply(mse_1, 1, mean)
   count <- count + 16
 }
 
@@ -262,6 +262,14 @@ figure2 <- merge(figure2, simulation_scenarios, by = "scenario")
 ## define vectors of what will be plotted
 figure2_sens <- figure2[which(figure2$sens == 1),]
 figure2_spec <- figure2[which(figure2$sens == 0),]
+
+
+
+
+
+
+
+
 
 ##  Bias Sensitivity
 # threshold 1 to 8
