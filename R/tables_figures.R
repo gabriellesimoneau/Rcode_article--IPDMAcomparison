@@ -30,6 +30,30 @@ Pdata <- data.for.poisson.example(example_data)
 
 
 
+#### --------------- Table 1 ---------------####
+
+catD <- matrix(NA, nrow = 13, ncol = 8) # number of diseased patients/category/study
+catND <- matrix(NA, nrow = 13, ncol = 8) # number of healthy patients/category/study
+row_total <- matrix(NA, nrow = 13, ncol = 2) # total number of diseased/healtht patients/study
+
+for(i in 1:13)
+{
+  D <- Pdata[which(Pdata$study==i & Pdata$dis==1),]
+  ND <- Pdata[which(Pdata$study==i & Pdata$dis==0), ]
+  
+  # diseased by category
+  catD[i,] <- round(c(sum(D$y[1:7]), D$y[8:13], D$r[14]), 0)
+  # healthy by category
+  catND[i,] <- round(c(sum(ND$y[1:7]), ND$y[8:13], ND$r[14]), 0)
+  # total
+  row_total[i,] <- c(sum(catD[i,]), sum(catND[i,]))
+}
+column_totalD <- apply(catD, 2, sum)
+column_totalND <- apply(catND, 2, sum)
+
+
+
+
 #### --------------- Figure 1 ---------------####
 ## individual ROC curves from the simulated data ##
 
@@ -80,28 +104,21 @@ for(i in seq(3, 25, by = 2))
 ## parameter estimates with the Bivariate approach ##
 
 # run one model per threshold
-cut7 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==7, weights = n)
+cut7 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==7, weights = ss)
 cut7s <- summary(cut7)
-
-cut8 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==8, weights = n)
+cut8 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==8, weights = ss)
 cut8s <- summary(cut8)
-
-cut9 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==9, weights = n)
+cut9 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==9, weights = ss)
 cut9s <- summary(cut9)
-
-cut10 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==10, weights = n)
+cut10 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==10, weights = ss)
 cut10s <- summary(cut10)
-
-cut11 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==11, weights = n)
+cut11 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==11, weights = ss)
 cut11s <- summary(cut11)
-
-cut12 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==12, weights = n)
+cut12 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==12, weights = ss)
 cut12s <- summary(cut12)
-
-cut13 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==13, weights = n)
+cut13 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==13, weights = ss)
 cut13s <- summary(cut13)
-
-cut14 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==14, weights = n)
+cut14 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==14, weights = ss)
 cut14s <- summary(cut14)
 
 # logit sensitivity and 1-specificity, standarho_dis error logit sensitivity, standard error logit specificity for thresholds 7 to 14
@@ -176,8 +193,8 @@ pooled_sensitivity_bivariate <- c(expit(fixef(cut7)[2]), expit(fixef(cut8)[2]), 
 # confidence intervals
 CI.sens.L <- c(expit(logit_sens_bivariate - 1.96*sd_logit_sens_bivariate))
 CI.sens.U <- c(expit(logit_sens_bivariate + 1.96*sd_logit_sens_bivariate))
-CI.spec.L <- 1-c(expit(logit_1_spec_bivariate - 1.96*sd_logit_1_spec_bivariate))
-CI.spec.U <- 1-c(expit(logit_1_spec_bivariate + 1.96*sd_logit_1_spec_bivariate))
+CI.spec.U <- 1-c(expit(logit_1_spec_bivariate - 1.96*sd_logit_1_spec_bivariate))
+CI.spec.L <- 1-c(expit(logit_1_spec_bivariate + 1.96*sd_logit_1_spec_bivariate))
 
 ## last two columns: results from the Poisson approach
 # extract pooled sensitivity, pooled specificity for thresholds 7 to 14
@@ -187,9 +204,10 @@ SE_pooled_spec_poisson <- apply(results_SE[,29:36], 2, sd)
 SE_pooled_sens_poisson <- apply(results_SE[,21:28], 2, sd)
 
 # confidence intervals
-CI.sens_poisson <- pooled_sensitivity_poisson + c(-1,1)*1.96*SE_pooled_sens_poisson 
-CI.spec_poisson <- pooled_specificity_poisson + c(-1,1)*1.96*SE_pooled_spec_poisson 
-
+CI.sens_poisson.L <- pooled_sensitivity_poisson - 1.96*SE_pooled_sens_poisson 
+CI.sens_poisson.U <- pooled_sensitivity_poisson + 1.96*SE_pooled_sens_poisson 
+CI.spec_poisson.L <- pooled_specificity_poisson - 1.96*SE_pooled_spec_poisson 
+CI.spec_poisson.U <- pooled_specificity_poisson + 1.96*SE_pooled_spec_poisson 
 
 
 
