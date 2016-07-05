@@ -83,7 +83,6 @@ data.for.bivariate.example <- function(original_data)
   colnames(phqBiv) <- c("cutoff", "study", "POS", "n", "d1", "d0")
   phqBiv$cutoff <- rep(seq(0,27), each = 26)
   phqBiv$study <- rep(rep(seq(1,13), each = 2), 28)
-  # ??? BREM.phq$status <- rep(c(0.5,-0.5), 364)
   phqBiv$d1 <- rep(c(1,0), 364)
   phqBiv$d0 <- rep(c(0,1), 364)
   
@@ -91,28 +90,31 @@ data.for.bivariate.example <- function(original_data)
   size <- c()
   for(i in 1:13)
   {
-    size <- c(size, sum(original_data$status[which(original_data$study==i)]), length(original_data$status[which(original_data$study==i & original_data$status==0)]))
+    size <- c(size, sum(original_data$weight[which(original_data$study==i & original_data$status==1)]), sum(original_data$weight[which(original_data$study==i & original_data$status==0)]))
   }
   phqBiv$n <- rep(size, 28)
   
   # compute POS+prop
   aug <- 0
   phqBiv$POS <- rep(0, 728)
+  ss <- c()
   for(i in 1:13)
   {
     stu <- original_data[which(original_data$study==i), ]
     stud1 <- stu[which(stu$status==1), ]
     stud0 <- stu[which(stu$status==0), ]
+    ss <- c(ss, nrow(stud1), nrow(stud0))
     k <- -1
     for(j in seq(1, 703, 26))
     {
-      phqBiv$POS[j+aug] <- dim(stud1[which(stud1$score>k), ])[1]
-      phqBiv$POS[j+1+aug] <- dim(stud0[which(stud0$score>k), ])[1]
+      phqBiv$POS[j+aug] <- sum(stud1$weight[which(stud1$score>k)])
+      phqBiv$POS[j+1+aug] <- sum(stud0$weight[which(stud0$score>k)])
       k <- k+1
     }
     aug <- aug+2
   }
   phqBiv$prop <- phqBiv$POS/phqBiv$n
+  phqBiv$ss <- rep(ss, 28) # weighted sample size
   return(phqBiv)
 }
 
