@@ -1,6 +1,6 @@
 ## simulation Poisson
-source("simulate_example.R")
-source("poisson_functions.R")
+source("functions_general.R")
+source("functions_poisson.R")
 library(MASS)
 
 
@@ -178,7 +178,6 @@ for(i in 13:16) # loop over scenarios
 }
 
 ## write csv with all results
-#setwd("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/Poisson_results/")
 files <-  list.files(pattern = "*.csv")
 all <- do.call(rbind, lapply(files, function(x) read.csv(x, stringsAsFactors = FALSE)))
 all$scenario <- rep(seq(1:16), each = 1000)
