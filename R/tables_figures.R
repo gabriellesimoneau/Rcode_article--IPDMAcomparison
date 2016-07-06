@@ -1,7 +1,6 @@
 library(lme4)
 library(MASS)
 library(copula)
-setwd("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/R")
 source("functions_general.R")
 source("functions_poisson.R")
 ## NOTE: ERASE DIRECTORIES
@@ -23,7 +22,7 @@ source("functions_poisson.R")
 
 #### --------------- Simulate dataset ---------------####
 
-example_data <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/Data/simulated_dataset.csv")
+example_data <- read.csv("simulated_dataset.csv")
 Bdata <- data.for.bivariate.application(example_data)
 Pdata <- data.for.poisson.application(example_data)
 
@@ -163,20 +162,21 @@ R <- c(rho_thres^(1:13), rho_dis*rho_thres^(0:13), rho_thres^(1:12), rho_dis*rho
 margins <- c(list(list(shape = 1/frailty_variance_1, rate = 1/frailty_variance_1))[rep(1,14)], list(list(shape = 1/frailty_variance_0, rate = 1/frailty_variance_0))[rep(1,14)])
 copula_input <- mvdc(normalCopula(R, dim = 28, dispstr="un"),  margins = rep("gamma", 28), paramMargins = margins)
 
-results_SE <- as.data.frame(matrix(NA, nrow = 500, ncol = 36))
-colnames(results_SE) <- c("lam1_7", "lam1_8", "lam1_9", "lam1_10", "lam1_11", "lam1_12", "lam1_13", "lam1_14", "lam0_7", "lam0_8", "lam0_9", "lam0_10", "lam0_11", "lam0_12", "lam0_13", "lam0_14", "frailty1", "frailty0", "rho_thres", "rho_dis", "sens7", "sens8", "sens9", "sens10", "sens11", "sens12", "sens13", "sens14", "spec7", "spec8", "spec9", "spec10", "spec11", "spec12", "spec13", "spec14")
+parametric_boot_example <- as.data.frame(matrix(NA, nrow = 500, ncol = 36))
+colnames(parametric_boot_example) <- c("lam1_7", "lam1_8", "lam1_9", "lam1_10", "lam1_11", "lam1_12", "lam1_13", "lam1_14", "lam0_7", "lam0_8", "lam0_9", "lam0_10", "lam0_11", "lam0_12", "lam0_13", "lam0_14", "frailty1", "frailty0", "rho_thres", "rho_dis", "sens7", "sens8", "sens9", "sens10", "sens11", "sens12", "sens13", "sens14", "spec7", "spec8", "spec9", "spec10", "spec11", "spec12", "spec13", "spec14")
 set.seed(2072016)
 for(i in 1:500)
 {
-  results_SE[i,] <- parametric_boot(data = Pdata, copula_input = copula_input)
+  parametric_boot_example[i,] <- parametric_boot(data = Pdata, copula_input = copula_input)
 }
+parametric_boot_example <- parametric_boot_example[,-1]
 
-SE_hazard_diseased <- apply(results_SE[,1:8], 2, sd)
-SE_hazard_healthy <- apply(results_SE[,9:16], 2, sd)
-SE_variance_frailty_1 <- sd(results_SE[,17])
-SE_variance_frailty_0 <- sd(results_SE[,18])
-SE_rho_thres <- sd(results_SE[,19])
-SE_rho_dis <- sd(results_SE[,20])
+SE_hazard_diseased <- apply(parametric_boot_example[,1:8], 2, sd)
+SE_hazard_healthy <- apply(parametric_boot_example[,9:16], 2, sd)
+SE_variance_frailty_1 <- sd(parametric_boot_example[,17])
+SE_variance_frailty_0 <- sd(parametric_boot_example[,18])
+SE_rho_thres <- sd(parametric_boot_example[,19])
+SE_rho_dis <- sd(parametric_boot_example[,20])
 
 
 
@@ -198,8 +198,8 @@ CI.spec.L <- 1-c(expit(logit_1_spec_bivariate + 1.96*sd_logit_1_spec_bivariate))
 # extract pooled sensitivity, pooled specificity for thresholds 7 to 14
 pooled_specificity_poisson <- Pois_pestimates$pooled_specificity
 pooled_sensitivity_poisson <- Pois_pestimates$pooled_sensitivity
-SE_pooled_spec_poisson <- apply(results_SE[,29:36], 2, sd)
-SE_pooled_sens_poisson <- apply(results_SE[,21:28], 2, sd)
+SE_pooled_spec_poisson <- apply(parametric_boot_example[,29:36], 2, sd)
+SE_pooled_sens_poisson <- apply(parametric_boot_example[,21:28], 2, sd)
 
 # confidence intervals
 CI.sens_poisson.L <- pooled_sensitivity_poisson - 1.96*SE_pooled_sens_poisson 
@@ -213,9 +213,9 @@ CI.spec_poisson.U <- pooled_specificity_poisson + 1.96*SE_pooled_spec_poisson
 #### --------------- Figure 2 ---------------####
 
 ## import csv with results
-biv <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/Bivariate_results/bivariate_all.csv", header = TRUE)
-pois <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/Poisson_results/poisson_all.csv", header = TRUE)
-simulation_scenarios <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/simulation_scenarios.csv")
+biv <- read.csv("simulation_results_bivariate.csv", header = TRUE)
+pois <- read.csv("simulation_results_poisson.csv", header = TRUE)
+simulation_scenarios <- read.csv("simulation_scenarios.csv")
 
 ## focus only on bias of sensitivity and specificity
 true_sens <-  c(0.94, 0.91, 0.88, 0.84, 0.79, 0.74, 0.67, 0.57)
