@@ -32,7 +32,7 @@ Reproduce Table 1-2-3-5 and Figure 1 as shown in `Results_example_dataset.pdf` b
 
 ## Simulations
 
-Reproduce Table 6 and Figure 2-3 by running all R code in the Simulation section of `tables_figures.R`.
+Reproduce Table 6 and Figure 2-3 in the manuscript by running all R code in the Simulation section of `tables_figures.R`.
 
 ## Support
 
