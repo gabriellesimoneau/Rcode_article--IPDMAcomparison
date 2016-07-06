@@ -18,7 +18,9 @@ source("functions_poisson.R")
 ##      - Table 6: results simulation correlation parameters
 
 
-
+##########################################################
+#                      DATA ANALYSIS                     #
+##########################################################
 
 #### --------------- Simulate dataset ---------------####
 
@@ -209,6 +211,10 @@ CI.spec_poisson.U <- pooled_specificity_poisson + 1.96*SE_pooled_spec_poisson
 
 
 
+
+##########################################################
+#                      SIMULATIONS                       #
+##########################################################
 
 #### --------------- Figure 2 ---------------####
 
