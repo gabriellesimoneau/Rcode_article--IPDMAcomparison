@@ -8,6 +8,7 @@ source("functions_poisson.R")
 
 ## As the PHQ9 dataset cannot be publish to this day, we simulated a similar dataset.
 ## We will use this simulated dataset to demonstrate how to reproduce:
+##      - Table 1: dataset description
 ##      - Figure 1: Individual ROC curves
 ##      - Table 3: Parameters estimates with bivariate approach
 ##      - Table 5: Parameters estimates with Poisson approach
@@ -159,7 +160,7 @@ rho_dis <- ab*sqrt(Pois_pestimates$frailty1*Pois_pestimates$frailty0)
 # estimate the standard errors via parametric bootstrap
 # define correlation matrix + margins specification for parametric bootstrap
 R <- c(rho_thres^(1:13), rho_dis*rho_thres^(0:13), rho_thres^(1:12), rho_dis*rho_thres, rho_dis*rho_thres^(0:12), rho_thres^(1:11), rho_dis*rho_thres^(2:1), rho_dis*rho_thres^(0:11), rho_thres^(1:10), rho_dis*rho_thres^(3:1), rho_dis*rho_thres^(0:10), rho_thres^(1:9), rho_dis*rho_thres^(4:1), rho_dis*rho_thres^(0:9), rho_thres^(1:8), rho_dis*rho_thres^(5:1), rho_dis*rho_thres^(0:8), rho_thres^(1:7), rho_dis*rho_thres^(6:1), rho_dis*rho_thres^(0:7), rho_thres^(1:6), rho_dis*rho_thres^(7:1), rho_dis*rho_thres^(0:6), rho_thres^(1:5), rho_dis*rho_thres^(8:1), rho_dis*rho_thres^(0:5), rho_thres^(1:4), rho_dis*rho_thres^(9:1), rho_dis*rho_thres^(0:4), rho_thres^(1:3), rho_dis*rho_thres^(10:1), rho_dis*rho_thres^(0:3), rho_thres^(1:2), rho_dis*rho_thres^(11:1), rho_dis*rho_thres^(0:2), rho_thres, rho_dis*rho_thres^(12:1), rho_dis*rho_thres^(0:1), rho_dis*rho_thres^(13:0), rho_thres^(1:13), rho_thres^(1:12), rho_thres^(1:11), rho_thres^(1:10), rho_thres^(1:9), rho_thres^(1:8), rho_thres^(1:7), rho_thres^(1:6), rho_thres^(1:5), rho_thres^(1:4), rho_thres^(1:3), rho_thres^(1:2), rho_thres)
-margins <- c(list(list(shape = 1/frailty_variance_1, rate = 1/frailty_variance_1))[rep(1,14)],list(list(shape = 1/frailty_variance_0, rate = 1/frailty_variance_0))[rep(1,14)])
+margins <- c(list(list(shape = 1/frailty_variance_1, rate = 1/frailty_variance_1))[rep(1,14)], list(list(shape = 1/frailty_variance_0, rate = 1/frailty_variance_0))[rep(1,14)])
 copula_input <- mvdc(normalCopula(R, dim = 28, dispstr="un"),  margins = rep("gamma", 28), paramMargins = margins)
 
 results_SE <- as.data.frame(matrix(NA, nrow = 500, ncol = 36))
@@ -169,8 +170,6 @@ for(i in 1:500)
 {
   results_SE[i,] <- parametric_boot(data = Pdata, copula_input = copula_input)
 }
-#results_SE <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/Results/results_SE.csv")
-#results_SE <- results_SE[,-1]
 
 SE_hazard_diseased <- apply(results_SE[,1:8], 2, sd)
 SE_hazard_healthy <- apply(results_SE[,9:16], 2, sd)
@@ -210,14 +209,13 @@ CI.spec_poisson.U <- pooled_specificity_poisson + 1.96*SE_pooled_spec_poisson
 
 
 
+
 #### --------------- Figure 2 ---------------####
 
 ## import csv with results
 biv <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/Bivariate_results/bivariate_all.csv", header = TRUE)
 pois <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/Poisson_results/poisson_all.csv", header = TRUE)
 simulation_scenarios <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/simulation_scenarios.csv")
-#biv <- merge(biv, simulation_scenarios, by = "scenario")
-#pois <- merge(pois, simulation_scenarios, by = "scenario")
 
 ## focus only on bias of sensitivity and specificity
 true_sens <-  c(0.94, 0.91, 0.88, 0.84, 0.79, 0.74, 0.67, 0.57)
@@ -226,7 +224,7 @@ true_spec <- c(0.74, 0.79, 0.83, 0.87, 0.89, 0.91, 0.93, 0.95)
 ## the dataframe figure2 contains all info to construct figure 2
 figure2 <- as.data.frame(matrix(NA, nrow = 2*8*2*16, ncol=7))
 colnames(figure2) <- c("scenario", "model", "sens", "threshold", "bias", "abs_bias", "mse")
-figure2$scenario <- rep(seq(1:16), each = 2*16)
+figure2$scenario <- rep(rep(seq(1:16), each = 16), 2)
 figure2$sens <- rep(c(rep(1,8), rep(0,8)), 2*16)
 figure2$threshold <- rep(seq(1:8), 2*2*16)
 figure2$model <- c(rep("biv", 8*2*16), rep("pois", 8*2*16))
@@ -248,6 +246,7 @@ for(i in 1:16)
 for(i in 1:16)
 {
   sce <- pois[which(pois$scenario == i),]
+  sce <- sce[,-c(1,2)]
   bias <- apply(sce[,1:16], 1, function(x) x-c(true_sens, true_spec))
   figure2$bias[count:(count+15)] <- apply(bias, 1, mean)
   abs_bias <- apply(sce[,1:16], 1, function(x) abs(x-c(true_sens, true_spec)))
@@ -259,123 +258,117 @@ for(i in 1:16)
 
 figure2 <- merge(figure2, simulation_scenarios, by = "scenario")
 
-## define vectors of what will be plotted
+## define dataframe and vectors to be plotted in Figure 2
 figure2_sens <- figure2[which(figure2$sens == 1),]
 figure2_spec <- figure2[which(figure2$sens == 0),]
 
-
-
-
-
-
-
-
-
-##  Bias Sensitivity
+# Top-left: mean bias of sensitivity
 # threshold 1 to 8
 bias_sens_thresBiv <- c(mean(figure2_sens$bias[which(figure2_sens$threshold == 1 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 2 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 3 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 4 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 5 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 6 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 7 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 8 & figure2_sens$model == "biv")]))
 bias_sens_thresPois <- c(mean(figure2_sens$bias[which(figure2_sens$threshold == 1 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 2 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 3 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 4 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 5 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 6 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 7 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$threshold == 8 & figure2_sens$model == "pois")]))
-# variance RE low and high
+# variance of random effect low and high
 bias_sens_varianceBiv <- c(mean(figure2_sens$bias[which(figure2_sens$var_sens==0.1 & figure2_sens$model == "biv")]),mean(figure2_sens$bias[which(figure2_sens$var_sens==0.25 & figure2_sens$model == "biv")]))
 bias_sens_variancePois <- c(mean(figure2_sens$bias[which(figure2_sens$var_sens==0.1 & figure2_sens$model == "pois")]),mean(figure2_sens$bias[which(figure2_sens$var_sens==0.25 & figure2_sens$model == "pois")]))
-# correlation rho dis low and high
-bias_sens_disBiv <- c(mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "biv")]))
-bias_sens_disPois <- c(mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "pois")]))
-# correlation rho thres low and high
-bias_sens_rthBiv <- c(mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "biv")]))
-bias_sens_rthPois <- c(mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "pois")]))
+# correlation rho_dis low and high
+bias_sens_rho_disBiv <- c(mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "biv")]))
+bias_sens_rho_disPois <- c(mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "pois")]))
+# correlation rho_thres low and high
+bias_sens_rho_thresBiv <- c(mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "biv")]))
+bias_sens_rho_thresPois <- c(mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "pois")]))
 # sample size diseased small large
-bias_sens_ndBiv <- c(mean(figure2_sens$bias[which(figure2_sens$ND==50 & figure2_sens$model == "biv")]),mean(figure2_sens$bias[which(figure2_sens$ND==100 & figure2_sens$model == "biv")]))
-bias_sens_ndPois <- c(mean(figure2_sens$bias[which(figure2_sens$ND==50 & figure2_sens$model == "pois")]),mean(figure2_sens$bias[which(figure2_sens$ND==100 & figure2_sens$model == "pois")]))
+bias_sens_ndBiv <- c(mean(figure2_sens$bias[which(figure2_sens$ND==50 & figure2_sens$model == "biv")]), mean(figure2_sens$bias[which(figure2_sens$ND==100 & figure2_sens$model == "biv")]))
+bias_sens_ndPois <- c(mean(figure2_sens$bias[which(figure2_sens$ND==50 & figure2_sens$model == "pois")]), mean(figure2_sens$bias[which(figure2_sens$ND==100 & figure2_sens$model == "pois")]))
 
-## Bias Specificity
+## Top-right: mean bias of specificity
 bias_spec_thresBiv <- c(mean(figure2_spec$bias[which(figure2_spec$threshold == 1 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 2 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 3 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 4 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 5 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 6 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 7 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 8 & figure2_spec$model == "biv")]))
 bias_spec_thresPois <- c(mean(figure2_spec$bias[which(figure2_spec$threshold == 1 & figure2_spec$model == "pois")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 2 & figure2_spec$model == "pois")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 3 & figure2_spec$model == "pois")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 4 & figure2_spec$model == "pois")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 5 & figure2_spec$model == "pois")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 6 & figure2_spec$model == "pois")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 7 & figure2_spec$model == "pois")]), mean(figure2_spec$bias[which(figure2_spec$threshold == 8 & figure2_spec$model == "pois")]))
 
-bias_spec_varianceBiv <- c(mean(figure2_spec$bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "biv")]),mean(figure2_spec$bias[which(figure2_spec$var_spec==0.25 & figure2_spec$model == "biv")]))
-bias_spec_variancePois <- c(mean(figure2_spec$bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "pois")]),mean(figure2_spec$bias[which(figure2_spec$var_spec==0.25 & figure2_spec$model == "pois")]))
+bias_spec_varianceBiv <- c(mean(figure2_spec$bias[which(figure2_spec$var_spec==0.05 & figure2_spec$model == "biv")]), mean(figure2_spec$bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "biv")]))
+bias_spec_variancePois <- c(mean(figure2_spec$bias[which(figure2_spec$var_spec==0.05 & figure2_spec$model == "pois")]),mean(figure2_spec$bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "pois")]))
 
-bias_spec_disBiv <- c(mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "biv")]))
-bias_spec_disPois <- c(mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "pois")]))
+bias_spec_rho_disBiv <- c(mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "biv")]))
+bias_spec_rho_disPois <- c(mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "pois")]))
 
-bias_spec_rthBiv <- c(mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "biv")]))
-bias_spec_rthPois <- c(mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "pois")]))
+bias_spec_rho_thresBiv <- c(mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "biv")]))
+bias_spec_rho_thresPois <- c(mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "pois")]))
 
 bias_spec_ndBiv <- c(mean(figure2_spec$bias[which(figure2_spec$ND==50 & figure2_spec$model == "biv")]),mean(figure2_spec$bias[which(figure2_spec$ND==100 & figure2_spec$model == "biv")]))
 bias_spec_ndPois <- c(mean(figure2_spec$bias[which(figure2_spec$ND==50 & figure2_spec$model == "pois")]),mean(figure2_spec$bias[which(figure2_spec$ND==100 & figure2_spec$model == "pois")]))
 
-## absolute bias sensitivity
+# Middle-left: absolute bias of sensitivity
 abs_bias_sens_thresBiv <- c(mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 1 & figure2_sens$model == "biv")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 2 & figure2_sens$model == "biv")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 3 & figure2_sens$model == "biv")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 4 & figure2_sens$model == "biv")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 5 & figure2_sens$model == "biv")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 6 & figure2_sens$model == "biv")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 7 & figure2_sens$model == "biv")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 8 & figure2_sens$model == "biv")]))
 abs_bias_sens_thresPois <- c(mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 1 & figure2_sens$model == "pois")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 2 & figure2_sens$model == "pois")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 3 & figure2_sens$model == "pois")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 4 & figure2_sens$model == "pois")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 5 & figure2_sens$model == "pois")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 6 & figure2_sens$model == "pois")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 7 & figure2_sens$model == "pois")]), mean(figure2_sens$abs_bias[which(figure2_sens$threshold == 8 & figure2_sens$model == "pois")]))
 
 abs_bias_sens_varianceBiv <- c(mean(figure2_sens$abs_bias[which(figure2_sens$var_sens==0.1 & figure2_sens$model == "biv")]),mean(figure2_sens$abs_bias[which(figure2_sens$var_sens==0.25 & figure2_sens$model == "biv")]))
 abs_bias_sens_variancePois <- c(mean(figure2_sens$abs_bias[which(figure2_sens$var_sens==0.1 & figure2_sens$model == "pois")]),mean(figure2_sens$abs_bias[which(figure2_sens$var_sens==0.25 & figure2_sens$model == "pois")]))
 
-abs_bias_sens_disBiv <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "biv")]))
-abs_bias_sens_disPois <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "pois")]))
+abs_bias_sens_rho_disBiv <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "biv")]))
+abs_bias_sens_rho_disPois <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "pois")]))
 
-abs_bias_sens_rthBiv <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "biv")]))
-abs_bias_sens_rthPois <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "pois")]))
+abs_bias_sens_rho_thresBiv <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "biv")]))
+abs_bias_sens_rho_thresPois <- c(mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$abs_bias[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "pois")]))
 
 abs_bias_sens_ndBiv <- c(mean(figure2_sens$abs_bias[which(figure2_sens$ND==50 & figure2_sens$model == "biv")]),mean(figure2_sens$abs_bias[which(figure2_sens$ND==100 & figure2_sens$model == "biv")]))
 abs_bias_sens_ndPois <- c(mean(figure2_sens$abs_bias[which(figure2_sens$ND==50 & figure2_sens$model == "pois")]),mean(figure2_sens$abs_bias[which(figure2_sens$ND==100 & figure2_sens$model == "pois")]))
 
-## absolute bias specificity
+# Middle-right: absolute bias of specificity
 abs_bias_spec_thresBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 1 & figure2_spec$model == "biv")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 2 & figure2_spec$model == "biv")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 3 & figure2_spec$model == "biv")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 4 & figure2_spec$model == "biv")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 5 & figure2_spec$model == "biv")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 6 & figure2_spec$model == "biv")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 7 & figure2_spec$model == "biv")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 8 & figure2_spec$model == "biv")]))
 abs_bias_spec_thresPois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 1 & figure2_spec$model == "pois")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 2 & figure2_spec$model == "pois")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 3 & figure2_spec$model == "pois")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 4 & figure2_spec$model == "pois")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 5 & figure2_spec$model == "pois")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 6 & figure2_spec$model == "pois")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 7 & figure2_spec$model == "pois")]), mean(figure2_spec$abs_bias[which(figure2_spec$threshold == 8 & figure2_spec$model == "pois")]))
 
-abs_bias_spec_varianceBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "biv")]),mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.25 & figure2_spec$model == "biv")]))
-abs_bias_spec_variancePois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "pois")]),mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.25 & figure2_spec$model == "pois")]))
+abs_bias_spec_varianceBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.05 & figure2_spec$model == "biv")]),mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "biv")]))
+abs_bias_spec_variancePois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.05 & figure2_spec$model == "pois")]),mean(figure2_spec$abs_bias[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "pois")]))
 
-abs_bias_spec_disBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "biv")]))
-abs_bias_spec_disPois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "pois")]))
+abs_bias_spec_rho_disBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "biv")]))
+abs_bias_spec_rho_disPois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "pois")]))
 
-abs_bias_spec_rthBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "biv")]))
-abs_bias_spec_rthPois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "pois")]))
+abs_bias_spec_rho_thresBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "biv")]))
+abs_bias_spec_rho_thresPois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$abs_bias[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "pois")]))
 
 abs_bias_spec_ndBiv <- c(mean(figure2_spec$abs_bias[which(figure2_spec$ND==50 & figure2_spec$model == "biv")]),mean(figure2_spec$abs_bias[which(figure2_spec$ND==100 & figure2_spec$model == "biv")]))
 abs_bias_spec_ndPois <- c(mean(figure2_spec$abs_bias[which(figure2_spec$ND==50 & figure2_spec$model == "pois")]),mean(figure2_spec$abs_bias[which(figure2_spec$ND==100 & figure2_spec$model == "pois")]))
 
-## MSE sensitivity
+# Bottom-left: MSE of sensitivity
 mse_sens_thresBiv <- c(mean(figure2_sens$mse[which(figure2_sens$threshold == 1 & figure2_sens$model == "biv")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 2 & figure2_sens$model == "biv")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 3 & figure2_sens$model == "biv")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 4 & figure2_sens$model == "biv")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 5 & figure2_sens$model == "biv")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 6 & figure2_sens$model == "biv")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 7 & figure2_sens$model == "biv")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 8 & figure2_sens$model == "biv")]))
 mse_sens_thresPois <- c(mean(figure2_sens$mse[which(figure2_sens$threshold == 1 & figure2_sens$model == "pois")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 2 & figure2_sens$model == "pois")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 3 & figure2_sens$model == "pois")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 4 & figure2_sens$model == "pois")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 5 & figure2_sens$model == "pois")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 6 & figure2_sens$model == "pois")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 7 & figure2_sens$model == "pois")]), mean(figure2_sens$mse[which(figure2_sens$threshold == 8 & figure2_sens$model == "pois")]))
 
 mse_sens_varianceBiv <- c(mean(figure2_sens$mse[which(figure2_sens$var_sens==0.1 & figure2_sens$model == "biv")]),mean(figure2_sens$mse[which(figure2_sens$var_sens==0.25 & figure2_sens$model == "biv")]))
 mse_sens_variancePois <- c(mean(figure2_sens$mse[which(figure2_sens$var_sens==0.1 & figure2_sens$model == "pois")]),mean(figure2_sens$mse[which(figure2_sens$var_sens==0.25 & figure2_sens$model == "pois")]))
 
-mse_sens_disBiv <- c(mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "biv")]))
-mse_sens_disPois <- c(mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "pois")]))
+mse_sens_rho_disBiv <- c(mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "biv")]))
+mse_sens_rho_disPois <- c(mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$mse[which(figure2_sens$rho_dis==0.75 & figure2_sens$model == "pois")]))
 
-mse_sens_rthBiv <- c(mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "biv")]))
-mse_sens_rthPois <- c(mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "pois")]))
+mse_sens_rho_thresBiv <- c(mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "biv")]),mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "biv")]))
+mse_sens_rho_thresPois <- c(mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.25 & figure2_sens$model == "pois")]),mean(figure2_sens$mse[which(figure2_sens$rho_thres==0.75 & figure2_sens$model == "pois")]))
 
 mse_sens_ndBiv <- c(mean(figure2_sens$mse[which(figure2_sens$ND==50 & figure2_sens$model == "biv")]),mean(figure2_sens$mse[which(figure2_sens$ND==100 & figure2_sens$model == "biv")]))
 mse_sens_ndPois <- c(mean(figure2_sens$mse[which(figure2_sens$ND==50 & figure2_sens$model == "pois")]),mean(figure2_sens$mse[which(figure2_sens$ND==100 & figure2_sens$model == "pois")]))
 
-## MSE specificity
+# Bottom-right: MSE of specificity
 mse_spec_thresBiv <- c(mean(figure2_spec$mse[which(figure2_spec$threshold == 1 & figure2_spec$model == "biv")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 2 & figure2_spec$model == "biv")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 3 & figure2_spec$model == "biv")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 4 & figure2_spec$model == "biv")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 5 & figure2_spec$model == "biv")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 6 & figure2_spec$model == "biv")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 7 & figure2_spec$model == "biv")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 8 & figure2_spec$model == "biv")]))
 mse_spec_thresPois <- c(mean(figure2_spec$mse[which(figure2_spec$threshold == 1 & figure2_spec$model == "pois")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 2 & figure2_spec$model == "pois")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 3 & figure2_spec$model == "pois")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 4 & figure2_spec$model == "pois")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 5 & figure2_spec$model == "pois")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 6 & figure2_spec$model == "pois")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 7 & figure2_spec$model == "pois")]), mean(figure2_spec$mse[which(figure2_spec$threshold == 8 & figure2_spec$model == "pois")]))
 
-mse_spec_varianceBiv <- c(mean(figure2_spec$mse[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "biv")]),mean(figure2_spec$mse[which(figure2_spec$var_spec==0.25 & figure2_spec$model == "biv")]))
-mse_spec_variancePois <- c(mean(figure2_spec$mse[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "pois")]),mean(figure2_spec$mse[which(figure2_spec$var_spec==0.25 & figure2_spec$model == "pois")]))
+mse_spec_varianceBiv <- c(mean(figure2_spec$mse[which(figure2_spec$var_spec==0.05 & figure2_spec$model == "biv")]),mean(figure2_spec$mse[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "biv")]))
+mse_spec_variancePois <- c(mean(figure2_spec$mse[which(figure2_spec$var_spec==0.05 & figure2_spec$model == "pois")]),mean(figure2_spec$mse[which(figure2_spec$var_spec==0.1 & figure2_spec$model == "pois")]))
 
-mse_spec_disBiv <- c(mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "biv")]))
-mse_spec_disPois <- c(mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "pois")]))
+mse_spec_rho_disBiv <- c(mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "biv")]))
+mse_spec_rho_disPois <- c(mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$mse[which(figure2_spec$rho_dis==0.75 & figure2_spec$model == "pois")]))
 
-mse_spec_rthBiv <- c(mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "biv")]))
-mse_spec_rthPois <- c(mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "pois")]))
+mse_spec_rho_thresBiv <- c(mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "biv")]),mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "biv")]))
+mse_spec_rho_thresPois <- c(mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.25 & figure2_spec$model == "pois")]),mean(figure2_spec$mse[which(figure2_spec$rho_thres==0.75 & figure2_spec$model == "pois")]))
 
 mse_spec_ndBiv <- c(mean(figure2_spec$mse[which(figure2_spec$ND==50 & figure2_spec$model == "biv")]),mean(figure2_spec$mse[which(figure2_spec$ND==100 & figure2_spec$model == "biv")]))
 mse_spec_ndPois <- c(mean(figure2_spec$mse[which(figure2_spec$ND==50 & figure2_spec$model == "pois")]),mean(figure2_spec$mse[which(figure2_spec$ND==100 & figure2_spec$model == "pois")]))
 
-#### figure 2 - start here
-okgrey=c("gray40")
-par(mfrow=c(3,2),mar=c(4.1,4.1,1.1,1.1))
+## figure 2 - start here
+# saved as chip_simulation.eps, width=845, height=725
 
-# bias sens
-plot(x = rep(1,2), y = c(min(bias_sens_thresBiv), max(bias_sens_thresBiv)), xlim = c(0,15), ylim = c(-0.015,0.02), type = "l", xlab = "Factors", ylab = "Mean bias of sensitivity", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
+okgrey <- c("gray40")
+par(mfrow = c(3,2), mar = c(4.1,4.1,1.1,1.1))
+
+# Top-left: mean bias of sensitivity
+plot(x = rep(1,2), y = c(min(bias_sens_thresBiv), max(bias_sens_thresBiv)), xlim = c(0, 15), ylim = c(-0.05, 0.02), type = "l", xlab = "Factors", ylab = "Mean bias of sensitivity", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
 abline(0,0)
-axis(1, at = c(1.5,4.5,7.5,10.5,13.5), labels = c("Threshold","Heterogeneity","rho(dis)","rho(thres)","n1"), cex.axis = 1)
+axis(1, at = c(1.5,4.5,7.5,10.5,13.5), labels = c("Threshold", "Heterogeneity", "rho(dis)", "rho(thres)", "n1"), cex.axis = 1)
 lines(x = rep(2,2), y = c(min(bias_sens_thresPois), max(bias_sens_thresPois)), col = okgrey)
 points(x = rep(1,8), y = bias_sens_thresBiv, pch="-", col="black")
 text(x = rep(0.75,8), y = bias_sens_thresBiv, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = "black")
@@ -385,37 +378,257 @@ text(x = rep(1.75,8), y = bias_sens_thresPois, labels = c("1","2","3","4","5","6
 lines(x = rep(4,2), y = c(min(bias_sens_varianceBiv), max(bias_sens_varianceBiv)), col = "black")
 lines(x = rep(5,2), y = c(min(bias_sens_variancePois), max(bias_sens_variancePois)), col = okgrey)
 points(x = rep(4,2), y = bias_sens_varianceBiv, pch = "-", col = "black")
-text(x = rep(4,2), y = c(bias_sens_varianceBiv[1]-0.00117, bias_sens_varianceBiv[2]+0.0013), labels = c("low","high"), cex = 1, col = "black")
+text(x = rep(4,2), y = c(bias_sens_varianceBiv[1]+0.003, bias_sens_varianceBiv[2]-0.003), labels = c("low","high"), cex = 1, col = "black")
 points(x = rep(5,2), y = bias_sens_variancePois, pch = "-", col = okgrey)
-text(x = rep(5,2), y = c(bias_sens_variancePois[1]-0.00117, bias_sens_variancePois[2]+0.0013), labels = c("low","high"), cex = 1, col = okgrey)
+text(x = rep(5,2), y = c(bias_sens_variancePois[1]+0.003, bias_sens_variancePois[2]-0.003), labels = c("low","high"), cex = 1, col = okgrey)
 
-lines(x = rep(7,2), y = c(min(bias_sens_disBiv), max(bias_sens_disBiv)), col = "black")
-lines(x = rep(8,2), y = c(min(bias_sens_disPois), max(bias_sens_disPois)), col = okgrey)
-points(x = rep(7,2), y = bias_sens_disBiv, pch = "-", col = "black")
-text(x = rep(7,2), y = c(bias_sens_disBiv[1]+0.0013, bias_sens_disBiv[2]-0.00117), labels = c("0.25","0.75"), cex = 1, col = "black")
-points(x = rep(8,2), y = bias_sens_disPois, pch = "-", col = okgrey)
-text(x = rep(8,2), y = c(bias_sens_disPois[1]+0.0013, bias_sens_disPois[2]-0.00117), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+lines(x = rep(7,2), y = c(min(bias_sens_rho_disBiv), max(bias_sens_rho_disBiv)), col = "black")
+lines(x = rep(8,2), y = c(min(bias_sens_rho_disPois), max(bias_sens_rho_disPois)), col = okgrey)
+points(x = rep(7,2), y = bias_sens_rho_disBiv, pch = "-", col = "black")
+text(x = rep(7,2), y = c(bias_sens_rho_disBiv[1]+0.003, bias_sens_rho_disBiv[2]-0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(8,2), y = bias_sens_rho_disPois, pch = "-", col = okgrey)
+text(x = rep(8,2), y = c(bias_sens_rho_disPois[1]+0.003, bias_sens_rho_disPois[2]-0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
 
-lines(x = rep(10,2), y = bias_sens_rthBiv, col="black")
-lines(x = rep(11,2), y = bias_sens_rthPois, col = okgrey)
-points(x = rep(10,2), y = bias_sens_rthBiv, pch = "-", col = "black")
-text(x = rep(10,2), y = c(bias_sens_rthBiv[1]+0.0013, bias_sens_rthBiv[2]-0.00117), labels = c("0.25","0.75"), cex = 1, col = "black")
-points(x = rep(11,2), y = bias_sens_rthPois, pch = "-", col = okgrey)
-text(x = rep(11,2), y = c(bias_sens_rthPois[1]-0.00117, bias_sens_rthPois[2]+0.0013), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+lines(x = rep(10,2), y = bias_sens_rho_thresBiv, col = "black")
+lines(x = rep(11,2), y = bias_sens_rho_thresPois, col = okgrey)
+points(x = rep(10,2), y = bias_sens_rho_thresBiv, pch = "-", col = "black")
+text(x = rep(10,2), y = c(bias_sens_rho_thresBiv[1]-0.003, bias_sens_rho_thresBiv[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(11,2), y = bias_sens_rho_thresPois, pch = "-", col = okgrey)
+text(x = rep(11,2), y = c(bias_sens_rho_thresPois[1]-0.003, bias_sens_rho_thresPois[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
 
 lines(x = rep(13,2), y = bias_sens_ndBiv, col = "black")
 lines(x = rep(14,2), y = bias_sens_ndPois, col = okgrey)
 points(x = rep(13,2), y = bias_sens_ndBiv, pch = "-", col = "black")
-text(x = rep(13,2), y = c(bias_sens_ndBiv[1]+0.0013, bias_sens_ndBiv[2]-0.00117), labels = c("50","100"), cex = 1, col = "black")
+text(x = rep(13,2), y = c(bias_sens_ndBiv[1]+0.003, bias_sens_ndBiv[2]-0.003), labels = c("50","100"), cex = 1, col = "black")
 points(x = rep(14,2), y = bias_sens_ndPois, pch = "-", col = okgrey)
-text(x = rep(14,2), y = c(bias_sens_ndPois[1]-0.00117, bias_sens_ndP[2]+0.0013), labels = c("50","100"), cex = 1, col = okgrey)
+text(x = rep(14,2), y = c(bias_sens_ndPois[1]-0.003, bias_sens_ndPois[2]+0.003), labels = c("50","100"), cex = 1, col = okgrey)
+
+# Top-right: mean bias of specificity
+plot(x = rep(1,2), y = c(min(bias_spec_thresBiv), max(bias_spec_thresBiv)), xlim = c(0, 15), ylim = c(-0.05, 0.02), type = "l", xlab = "Factors", ylab = "Mean bias of specificity", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
+abline(0,0)
+axis(1, at = c(1.5,4.5,7.5,10.5,13.5), labels = c("Threshold", "Heterogeneity", "rho(dis)", "rho(thres)", "n1"), cex.axis = 1)
+lines(x = rep(2,2), y = c(min(bias_spec_thresPois), max(bias_spec_thresPois)), col = okgrey)
+points(x = rep(1,8), y = bias_spec_thresBiv, pch="-", col="black")
+text(x = rep(0.75,8), y = bias_spec_thresBiv, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = "black")
+points(x = rep(2,8), y = bias_spec_thresPois, pch = "-", col = okgrey)
+text(x = rep(1.75,8), y = bias_spec_thresPois, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = okgrey)
+
+lines(x = rep(4,2), y = c(min(bias_spec_varianceBiv), max(bias_spec_varianceBiv)), col = "black")
+lines(x = rep(5,2), y = c(min(bias_spec_variancePois), max(bias_spec_variancePois)), col = okgrey)
+points(x = rep(4,2), y = bias_spec_varianceBiv, pch = "-", col = "black")
+text(x = rep(4,2), y = c(bias_spec_varianceBiv[1]+0.003, bias_spec_varianceBiv[2]-0.003), labels = c("low","high"), cex = 1, col = "black")
+points(x = rep(5,2), y = bias_spec_variancePois, pch = "-", col = okgrey)
+text(x = rep(5,2), y = c(bias_spec_variancePois[1]+0.003, bias_spec_variancePois[2]-0.003), labels = c("low","high"), cex = 1, col = okgrey)
+
+lines(x = rep(7,2), y = c(min(bias_spec_rho_disBiv), max(bias_spec_rho_disBiv)), col = "black")
+lines(x = rep(8,2), y = c(min(bias_spec_rho_disPois), max(bias_spec_rho_disPois)), col = okgrey)
+points(x = rep(7,2), y = bias_spec_rho_disBiv, pch = "-", col = "black")
+text(x = rep(7,2), y = c(bias_spec_rho_disBiv[1]+0.003, bias_spec_rho_disBiv[2]-0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(8,2), y = bias_spec_rho_disPois, pch = "-", col = okgrey)
+text(x = rep(8,2), y = c(bias_spec_rho_disPois[1]+0.003, bias_spec_rho_disPois[2]-0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(10,2), y = bias_spec_rho_thresBiv, col="black")
+lines(x = rep(11,2), y = bias_spec_rho_thresPois, col = okgrey)
+points(x = rep(10,2), y = bias_spec_rho_thresBiv, pch = "-", col = "black")
+text(x = rep(10,2), y = c(bias_spec_rho_thresBiv[1]-0.003, bias_spec_rho_thresBiv[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(11,2), y = bias_spec_rho_thresPois, pch = "-", col = okgrey)
+text(x = rep(11,2), y = c(bias_spec_rho_thresPois[1]-0.003, bias_spec_rho_thresPois[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(13,2), y = bias_spec_ndBiv, col = "black")
+lines(x = rep(14,2), y = bias_spec_ndPois, col = okgrey)
+points(x = rep(13,2), y = bias_spec_ndBiv, pch = "-", col = "black")
+text(x = rep(13,2), y = c(bias_spec_ndBiv[1]+0.003, bias_spec_ndBiv[2]-0.003), labels = c("50","100"), cex = 1, col = "black")
+points(x = rep(14,2), y = bias_spec_ndPois, pch = "-", col = okgrey)
+text(x = rep(14,2), y = c(bias_spec_ndPois[1]+0.003, bias_spec_ndPois[2]-0.003), labels = c("50","100"), cex = 1, col = okgrey)
+
+# Middle-left: absolute bias of sensitivity
+plot(x = rep(1,2), y = c(min(abs_bias_sens_thresBiv), max(abs_bias_sens_thresBiv)), xlim = c(0, 15), ylim = c(0, 0.06), type = "l", xlab = "Factors", ylab = "Mean absolute bias of sensitivity", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
+axis(1, at = c(1.5,4.5,7.5,10.5,13.5), labels = c("Threshold", "Heterogeneity", "rho(dis)", "rho(thres)", "n1"), cex.axis = 1)
+lines(x = rep(2,2), y = c(min(abs_bias_sens_thresPois), max(abs_bias_sens_thresPois)), col = okgrey)
+points(x = rep(1,8), y = abs_bias_sens_thresBiv, pch="-", col="black")
+text(x = rep(0.75,8), y = abs_bias_sens_thresBiv, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = "black")
+points(x = rep(2,8), y = abs_bias_sens_thresPois, pch = "-", col = okgrey)
+text(x = rep(1.75,8), y = abs_bias_sens_thresPois, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = okgrey)
+
+lines(x = rep(4,2), y = c(min(abs_bias_sens_varianceBiv), max(abs_bias_sens_varianceBiv)), col = "black")
+lines(x = rep(5,2), y = c(min(abs_bias_sens_variancePois), max(abs_bias_sens_variancePois)), col = okgrey)
+points(x = rep(4,2), y = abs_bias_sens_varianceBiv, pch = "-", col = "black")
+text(x = rep(4,2), y = c(abs_bias_sens_varianceBiv[1]-0.003, abs_bias_sens_varianceBiv[2]+0.003), labels = c("low","high"), cex = 1, col = "black")
+points(x = rep(5,2), y = abs_bias_sens_variancePois, pch = "-", col = okgrey)
+text(x = rep(5,2), y = c(abs_bias_sens_variancePois[1]-0.003, abs_bias_sens_variancePois[2]+0.003), labels = c("low","high"), cex = 1, col = okgrey)
+
+lines(x = rep(7,2), y = c(min(abs_bias_sens_rho_disBiv), max(abs_bias_sens_rho_disBiv)), col = "black")
+lines(x = rep(8,2), y = c(min(abs_bias_sens_rho_disPois), max(abs_bias_sens_rho_disPois)), col = okgrey)
+points(x = rep(7,2), y = abs_bias_sens_rho_disBiv, pch = "-", col = "black")
+text(x = rep(7,2), y = c(abs_bias_sens_rho_disBiv[1]-0.003, abs_bias_sens_rho_disBiv[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(8,2), y = abs_bias_sens_rho_disPois, pch = "-", col = okgrey)
+text(x = rep(8,2), y = c(abs_bias_sens_rho_disPois[1]-0.003, abs_bias_sens_rho_disPois[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(10,2), y = abs_bias_sens_rho_thresBiv, col = "black")
+lines(x = rep(11,2), y = abs_bias_sens_rho_thresPois, col = okgrey)
+points(x = rep(10,2), y = abs_bias_sens_rho_thresBiv, pch = "-", col = "black")
+text(x = rep(10,2), y = c(abs_bias_sens_rho_thresBiv[1]+0.003, abs_bias_sens_rho_thresBiv[2]-0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(11,2), y = abs_bias_sens_rho_thresPois, pch = "-", col = okgrey)
+text(x = rep(11,2), y = c(abs_bias_sens_rho_thresPois[1]-0.003, abs_bias_sens_rho_thresPois[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(13,2), y = abs_bias_sens_ndBiv, col = "black")
+lines(x = rep(14,2), y = abs_bias_sens_ndPois, col = okgrey)
+points(x = rep(13,2), y = abs_bias_sens_ndBiv, pch = "-", col = "black")
+text(x = rep(13,2), y = c(abs_bias_sens_ndBiv[1]+0.003, abs_bias_sens_ndBiv[2]-0.003), labels = c("50","100"), cex = 1, col = "black")
+points(x = rep(14,2), y = abs_bias_sens_ndPois, pch = "-", col = okgrey)
+text(x = rep(14,2), y = c(abs_bias_sens_ndPois[1]-0.003, abs_bias_sens_ndPois[2]+0.003), labels = c("50","100"), cex = 1, col = okgrey)
+
+# Middle-right: mean absolute bias of specificity
+plot(x = rep(1,2), y = c(min(abs_bias_spec_thresBiv), max(abs_bias_spec_thresBiv)), xlim = c(0, 15), ylim = c(0, 0.06), type = "l", xlab = "Factors", ylab = "Mean absolute bias of specificity", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
+axis(1, at = c(1.5,4.5,7.5,10.5,13.5), labels = c("Threshold", "Heterogeneity", "rho(dis)", "rho(thres)", "n1"), cex.axis = 1)
+lines(x = rep(2,2), y = c(min(abs_bias_spec_thresPois), max(abs_bias_spec_thresPois)), col = okgrey)
+points(x = rep(1,8), y = abs_bias_spec_thresBiv, pch="-", col="black")
+text(x = rep(0.75,8), y = abs_bias_spec_thresBiv, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = "black")
+points(x = rep(2,8), y = abs_bias_spec_thresPois, pch = "-", col = okgrey)
+text(x = rep(1.75,8), y = abs_bias_spec_thresPois, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = okgrey)
+
+lines(x = rep(4,2), y = c(min(abs_bias_spec_varianceBiv), max(abs_bias_spec_varianceBiv)), col = "black")
+lines(x = rep(5,2), y = c(min(abs_bias_spec_variancePois), max(abs_bias_spec_variancePois)), col = okgrey)
+points(x = rep(4,2), y = abs_bias_spec_varianceBiv, pch = "-", col = "black")
+text(x = rep(4,2), y = c(abs_bias_spec_varianceBiv[1]-0.003, abs_bias_spec_varianceBiv[2]+0.003), labels = c("low","high"), cex = 1, col = "black")
+points(x = rep(5,2), y = abs_bias_spec_variancePois, pch = "-", col = okgrey)
+text(x = rep(5,2), y = c(abs_bias_spec_variancePois[1]-0.003, abs_bias_spec_variancePois[2]+0.003), labels = c("low","high"), cex = 1, col = okgrey)
+
+lines(x = rep(7,2), y = c(min(abs_bias_spec_rho_disBiv), max(abs_bias_spec_rho_disBiv)), col = "black")
+lines(x = rep(8,2), y = c(min(abs_bias_spec_rho_disPois), max(abs_bias_spec_rho_disPois)), col = okgrey)
+points(x = rep(7,2), y = abs_bias_spec_rho_disBiv, pch = "-", col = "black")
+text(x = rep(7,2), y = c(abs_bias_spec_rho_disBiv[1]-0.003, abs_bias_spec_rho_disBiv[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(8,2), y = abs_bias_spec_rho_disPois, pch = "-", col = okgrey)
+text(x = rep(8,2), y = c(abs_bias_spec_rho_disPois[1]-0.003, abs_bias_spec_rho_disPois[2]+0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(10,2), y = abs_bias_spec_rho_thresBiv, col="black")
+lines(x = rep(11,2), y = abs_bias_spec_rho_thresPois, col = okgrey)
+points(x = rep(10,2), y = abs_bias_spec_rho_thresBiv, pch = "-", col = "black")
+text(x = rep(10,2), y = c(abs_bias_spec_rho_thresBiv[1]+0.003, abs_bias_spec_rho_thresBiv[2]-0.003), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(11,2), y = abs_bias_spec_rho_thresPois, pch = "-", col = okgrey)
+text(x = rep(11,2), y = c(abs_bias_spec_rho_thresPois[1]+0.003, abs_bias_spec_rho_thresPois[2]-0.003), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(13,2), y = abs_bias_spec_ndBiv, col = "black")
+lines(x = rep(14,2), y = abs_bias_spec_ndPois, col = okgrey)
+points(x = rep(13,2), y = abs_bias_spec_ndBiv, pch = "-", col = "black")
+text(x = rep(13,2), y = c(abs_bias_spec_ndBiv[1]+0.003, abs_bias_spec_ndBiv[2]-0.003), labels = c("50","100"), cex = 1, col = "black")
+points(x = rep(14,2), y = abs_bias_spec_ndPois, pch = "-", col = okgrey)
+text(x = rep(14,2), y = c(abs_bias_spec_ndPois[1]-0.003, abs_bias_spec_ndPois[2]+0.003), labels = c("50","100"), cex = 1, col = okgrey)
+
+
+# Bottom-left: MSE of sensitivity
+plot(x = rep(1,2), y = c(min(mse_sens_thresBiv), max(mse_sens_thresBiv)), xlim = c(0, 15), ylim = c(0, 0.005), type = "l", xlab = "Factors", ylab = "Mean MSE of sensitivity", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
+axis(1, at = c(1.5,4.5,7.5,10.5,13.5), labels = c("Threshold", "Heterogeneity", "rho(dis)", "rho(thres)", "n1"), cex.axis = 1)
+lines(x = rep(2,2), y = c(min(mse_sens_thresPois), max(mse_sens_thresPois)), col = okgrey)
+points(x = rep(1,8), y = mse_sens_thresBiv, pch="-", col="black")
+text(x = rep(0.75,8), y = mse_sens_thresBiv, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = "black")
+points(x = rep(2,8), y = mse_sens_thresPois, pch = "-", col = okgrey)
+text(x = rep(1.75,8), y = mse_sens_thresPois, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = okgrey)
+
+lines(x = rep(4,2), y = c(min(mse_sens_varianceBiv), max(mse_sens_varianceBiv)), col = "black")
+lines(x = rep(5,2), y = c(min(mse_sens_variancePois), max(mse_sens_variancePois)), col = okgrey)
+points(x = rep(4,2), y = mse_sens_varianceBiv, pch = "-", col = "black")
+text(x = rep(4,2), y = c(mse_sens_varianceBiv[1]-0.0002, mse_sens_varianceBiv[2]+0.0002), labels = c("low","high"), cex = 1, col = "black")
+points(x = rep(5,2), y = mse_sens_variancePois, pch = "-", col = okgrey)
+text(x = rep(5,2), y = c(mse_sens_variancePois[1]-0.0002, mse_sens_variancePois[2]+0.0002), labels = c("low","high"), cex = 1, col = okgrey)
+
+lines(x = rep(7,2), y = c(min(mse_sens_rho_disBiv), max(mse_sens_rho_disBiv)), col = "black")
+lines(x = rep(8,2), y = c(min(mse_sens_rho_disPois), max(mse_sens_rho_disPois)), col = okgrey)
+points(x = rep(7,2), y = mse_sens_rho_disBiv, pch = "-", col = "black")
+text(x = rep(7,2), y = c(mse_sens_rho_disBiv[1]-0.0002, mse_sens_rho_disBiv[2]+0.0002), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(8,2), y = mse_sens_rho_disPois, pch = "-", col = okgrey)
+text(x = rep(8,2), y = c(mse_sens_rho_disPois[1]-0.0002, mse_sens_rho_disPois[2]+0.0002), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(10,2), y = mse_sens_rho_thresBiv, col = "black")
+lines(x = rep(11,2), y = mse_sens_rho_thresPois, col = okgrey)
+points(x = rep(10,2), y = mse_sens_rho_thresBiv, pch = "-", col = "black")
+text(x = rep(10,2), y = c(mse_sens_rho_thresBiv[1]+0.0002, mse_sens_rho_thresBiv[2]-0.0002), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(11,2), y = mse_sens_rho_thresPois, pch = "-", col = okgrey)
+text(x = rep(11,2), y = c(mse_sens_rho_thresPois[1]-0.0002, mse_sens_rho_thresPois[2]+0.0002), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(13,2), y = mse_sens_ndBiv, col = "black")
+lines(x = rep(14,2), y = mse_sens_ndPois, col = okgrey)
+points(x = rep(13,2), y = mse_sens_ndBiv, pch = "-", col = "black")
+text(x = rep(13,2), y = c(mse_sens_ndBiv[1]+0.0002, mse_sens_ndBiv[2]-0.0002), labels = c("50","100"), cex = 1, col = "black")
+points(x = rep(14,2), y = mse_sens_ndPois, pch = "-", col = okgrey)
+text(x = rep(14,2), y = c(mse_sens_ndPois[1]-0.0002, mse_sens_ndPois[2]+0.0002), labels = c("50","100"), cex = 1, col = okgrey)
+
+# Bottom-right: mean MSE of specificity
+plot(x = rep(1,2), y = c(min(mse_spec_thresBiv), max(mse_spec_thresBiv)), xlim = c(0, 15), ylim = c(0, 0.005), type = "l", xlab = "Factors", ylab = "Mean absolute bias of specificity", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
+axis(1, at = c(1.5,4.5,7.5,10.5,13.5), labels = c("Threshold", "Heterogeneity", "rho(dis)", "rho(thres)", "n1"), cex.axis = 1)
+lines(x = rep(2,2), y = c(min(mse_spec_thresPois), max(mse_spec_thresPois)), col = okgrey)
+points(x = rep(1,8), y = mse_spec_thresBiv, pch="-", col="black")
+text(x = rep(0.75,8), y = mse_spec_thresBiv, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = "black")
+points(x = rep(2,8), y = mse_spec_thresPois, pch = "-", col = okgrey)
+text(x = rep(1.75,8), y = mse_spec_thresPois, labels = c("1","2","3","4","5","6","7","8"), cex = 1, col = okgrey)
+
+lines(x = rep(4,2), y = c(min(mse_spec_varianceBiv), max(mse_spec_varianceBiv)), col = "black")
+lines(x = rep(5,2), y = c(min(mse_spec_variancePois), max(mse_spec_variancePois)), col = okgrey)
+points(x = rep(4,2), y = mse_spec_varianceBiv, pch = "-", col = "black")
+text(x = rep(4,2), y = c(mse_spec_varianceBiv[1]-0.0002, mse_spec_varianceBiv[2]+0.0002), labels = c("low","high"), cex = 1, col = "black")
+points(x = rep(5,2), y = mse_spec_variancePois, pch = "-", col = okgrey)
+text(x = rep(5,2), y = c(mse_spec_variancePois[1]-0.0002, mse_spec_variancePois[2]+0.0002), labels = c("low","high"), cex = 1, col = okgrey)
+
+lines(x = rep(7,2), y = c(min(mse_spec_rho_disBiv), max(mse_spec_rho_disBiv)), col = "black")
+lines(x = rep(8,2), y = c(min(mse_spec_rho_disPois), max(mse_spec_rho_disPois)), col = okgrey)
+points(x = rep(7,2), y = mse_spec_rho_disBiv, pch = "-", col = "black")
+text(x = rep(7,2), y = c(mse_spec_rho_disBiv[1]-0.0002, mse_spec_rho_disBiv[2]+0.0002), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(8,2), y = mse_spec_rho_disPois, pch = "-", col = okgrey)
+text(x = rep(8,2), y = c(mse_spec_rho_disPois[1]-0.0002, mse_spec_rho_disPois[2]+0.0002), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(10,2), y = mse_spec_rho_thresBiv, col="black")
+lines(x = rep(11,2), y = mse_spec_rho_thresPois, col = okgrey)
+points(x = rep(10,2), y = mse_spec_rho_thresBiv, pch = "-", col = "black")
+text(x = rep(10,2), y = c(mse_spec_rho_thresBiv[1]+0.0002, mse_spec_rho_thresBiv[2]-0.0002), labels = c("0.25","0.75"), cex = 1, col = "black")
+points(x = rep(11,2), y = mse_spec_rho_thresPois, pch = "-", col = okgrey)
+text(x = rep(11,2), y = c(mse_spec_rho_thresPois[1]+0.0002, mse_spec_rho_thresPois[2]-0.0002), labels = c("0.25","0.75"), cex = 1, col = okgrey)
+
+lines(x = rep(13,2), y = mse_spec_ndBiv, col = "black")
+lines(x = rep(14,2), y = mse_spec_ndPois, col = okgrey)
+points(x = rep(13,2), y = mse_spec_ndBiv, pch = "-", col = "black")
+text(x = rep(13,2), y = c(mse_spec_ndBiv[1]-0.0002, mse_spec_ndBiv[2]+0.0002), labels = c("50","100"), cex = 1, col = "black")
+points(x = rep(14,2), y = mse_spec_ndPois, pch = "-", col = okgrey)
+text(x = rep(14,2), y = c(mse_spec_ndPois[1]-0.0002, mse_spec_ndPois[2]+0.0002), labels = c("50","100"), cex = 1, col = okgrey)
+
+## figure 2 - end here
 
 
 
-#### figure 2 - end here
+
+#### --------------- Figure 3 ---------------####
+# saved as chip_thres.eps width=750, heigth=497
+okgrey <- c("gray40")
+par(mfrow = c(1,1), mar = c(5, 4, 2, 2) + 0.1)
+
+plot(x = seq(1:8), y = bias_sens_thresBiv, type = "l", xlab = "True sensitivity/True specificity", ylab = "Mean bias of sensitivity and specificity", main = "", xaxt = "n", col = "black", cex.lab=1, cex.axis=0.8)
+axis(1, at = seq(1:8), labels = c("0.94/0.74", "0.91/0.79", "0.88/0.83", "0.84/0.87", "0.79/0.89", "0.74/0.91", "0.67/0.93", "0.57/0.95"), cex.axis = 1)
+abline(0,0)
+lines(x = seq(1:8), y = bias_sens_thresPois, col = okgrey)
+lines(x = seq(1:8), y = bias_spec_thresBiv, col = "black", lty = 2)
+lines(x = seq(1:8), y = bias_spec_thresPois, col = okgrey, lty = 2)
+legend(x = 1, y = -0.035, legend = c("Sensitivity BREM", "Sensitivity Poisson", "Specificity BREM", "Specificity Poisson"), col = c("black", okgrey, "black", okgrey), lty = c(1,1,2,2), bty = "n", cex = 1.2)
 
 
 
+
+#### --------------- Table 6 ---------------####
+biv_scenario1 <- biv[which(biv$scenario==1),]
+pois_scenario1 <- pois[which(pois$scenario==1),]
+biv_scenario1 <- biv_scenario1[,-1]
+pois_scenario1 <- pois_scenario1[,-c(1,2)]
+
+# bivariate correlations
+table6_biv <- as.data.frame(matrix(NA, nrow=8, ncol=3))
+colnames(table6_biv) <- c("Mean", "SD", "Failure")
+
+table6_biv[,1] <- apply(biv_scenario1[,33:40], 2, mean, na.rm=TRUE)
+table6_biv[,2] <- apply(biv_scenario1[,33:40], 2, sd, na.rm=TRUE)
+table6_biv[,3] <- apply(biv_scenario1[,33:40], 2, function(x) sum(is.na(x))/1000*100)
+
+# poisson rho_dis
+mean(pois_scenario1[,20])
+sd(pois_scenario1[,20])
+sum(is.na(pois_scenario1[,20]))/1000*100
 
 
 
