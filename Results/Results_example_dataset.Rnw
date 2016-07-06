@@ -1,0 +1,322 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\newcommand{\norme}[1]{\left\Vert #1\right\Vert}
+\usepackage{breqn}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{pdflscape}
+\usepackage{afterpage}
+\usepackage{multirow} %multicolumn
+\usepackage{xcolor}
+\usepackage[margin=0.9in]{geometry}
+\usepackage[pagebackref=true,bookmarks]{hyperref}
+\usepackage{tikz}
+\usepackage{natbib}
+\usepackage{rotating}
+
+\usepackage{capt-of}% or use the larger `caption` package
+
+\hypersetup{
+    unicode=false,          
+    pdftoolbar=true,        
+    pdfmenubar=true,        
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={Supplement_IPDMA},    % title
+    pdfauthor={Gabrielle Simoneau},     % author
+    pdfsubject={Subject},   % subject of the document
+    pdfcreator={Gabrielle Simoneau},   % creator of the document
+    pdfproducer={Gabrielle Simoneau}, % producer of the document
+    pdfkeywords={}, % list of keywords
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=red,          % color of internal links (change box color with linkbordercolor)
+    citecolor=blue,        % color of links to bibliography
+    filecolor=black,      % color of file links
+    urlcolor=cyan           % color of external links
+}
+
+\title{Reproducing Table 1-2-3-5, and Figure 1 using the simulated data}
+\begin{document}
+\maketitle
+\section{Figures}
+
+% FIGURE 1
+\begin{figure}[!htbp]
+\label{Figure1}
+\centering
+\includegraphics[scale=0.7]{Figure1_1.jpeg}
+\caption{Individual ROC curves for the 13 studies investigating the diagnostic accuracy of the PHQ-9 questionnaire. Each line represents a study-specific empirical ROC curve based on estimated sensitivity and specificity for threshold 0 to 27. The study numbers found in Table 1 identified which ROC curve represented which study.}
+\end{figure}
+\pagebreak
+
+% code to produce Table1
+<<table1, eval=TRUE, echo=FALSE, message=FALSE>>=
+library(lme4)
+library(MASS)
+setwd("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/R")
+source("functions_general.R")
+source("functions_poisson.R")
+
+example_data <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/Data/simulated_dataset.csv")
+Bdata <- data.for.bivariate.application(example_data)
+Pdata <- data.for.poisson.application(example_data)
+
+# Table 1
+catD <- matrix(NA, nrow = 13, ncol = 8)
+catND <- matrix(NA, nrow = 13, ncol = 8)
+row_total <- matrix(NA, nrow = 13, ncol = 2)
+
+for(i in 1:13)
+{
+  D <- Pdata[which(Pdata$study==i & Pdata$dis==1),]
+  ND <- Pdata[which(Pdata$study==i & Pdata$dis==0), ]
+  
+  # diseased by category
+  catD[i,] <- round(c(sum(D$y[1:7]), D$y[8:13], D$r[14]), 0)
+  # healthy by category
+  catND[i,] <- round(c(sum(ND$y[1:7]), ND$y[8:13], ND$r[14]), 0)
+  # total
+  row_total[i,] <- c(sum(catD[i,]), sum(catND[i,]))
+}
+column_totalD <- apply(catD, 2, sum)
+column_totalND <- apply(catND, 2, sum)
+@
+
+% TABLE 1
+\section{Tables}
+\begin{table}[!htbp]
+\caption{Number of truly MDD/non-MDD patients with test result above/below the threshold of interest, for each threshold between 7 and 14 of PHQ-9 score categories in 13 studies}
+\centering
+\scalebox{0.8}{\begin{tabular}{lccccccccccc}
+\toprule
+& & \multicolumn{8}{c}{Simulated Example Score}&\\
+Study  && $\leqslant$7 & 8 & 9 & 10 & 11 & 12 & 13 & $\geqslant$14 && Total\\
+\midrule
+1 &&   \Sexpr{catD[1,1]}/\Sexpr{catND[1,1]}  & \Sexpr{catD[1,2]}/\Sexpr{catND[1,2]} & \Sexpr{catD[1,3]}/\Sexpr{catND[1,3]} & \Sexpr{catD[1,4]}/\Sexpr{catND[1,4]}  & \Sexpr{catD[1,5]}/\Sexpr{catND[1,5]} & \Sexpr{catD[1,6]}/\Sexpr{catND[1,6]} & \Sexpr{catD[1,7]}/\Sexpr{catND[1,7]} & \Sexpr{catD[1,8]}/\Sexpr{catND[1,8]} && \Sexpr{row_total[1,1]}/\Sexpr{row_total[1,2]} \\ 
+		
+2 &&   \Sexpr{catD[2,1]}/\Sexpr{catND[2,1]}  & \Sexpr{catD[2,2]}/\Sexpr{catND[2,2]} & \Sexpr{catD[2,3]}/\Sexpr{catND[2,3]} & \Sexpr{catD[2,4]}/\Sexpr{catND[2,4]}  & \Sexpr{catD[2,5]}/\Sexpr{catND[2,5]} & \Sexpr{catD[2,6]}/\Sexpr{catND[2,6]} & \Sexpr{catD[2,7]}/\Sexpr{catND[2,7]} & \Sexpr{catD[2,8]}/\Sexpr{catND[2,8]} && \Sexpr{row_total[2,1]}/\Sexpr{row_total[2,2]} \\ 
+				 
+3 &&   \Sexpr{catD[3,1]}/\Sexpr{catND[3,1]}  & \Sexpr{catD[3,2]}/\Sexpr{catND[3,2]} & \Sexpr{catD[3,3]}/\Sexpr{catND[3,3]} & \Sexpr{catD[3,4]}/\Sexpr{catND[3,4]}  & \Sexpr{catD[3,5]}/\Sexpr{catND[3,5]} & \Sexpr{catD[3,6]}/\Sexpr{catND[3,6]} & \Sexpr{catD[3,7]}/\Sexpr{catND[3,7]} & \Sexpr{catD[3,8]}/\Sexpr{catND[3,8]} && \Sexpr{row_total[3,1]}/\Sexpr{row_total[3,2]} \\ 
+		 
+4 &&   \Sexpr{catD[4,1]}/\Sexpr{catND[4,1]}  & \Sexpr{catD[4,2]}/\Sexpr{catND[4,2]} & \Sexpr{catD[4,3]}/\Sexpr{catND[4,3]} & \Sexpr{catD[4,4]}/\Sexpr{catND[4,4]}  & \Sexpr{catD[4,5]}/\Sexpr{catND[4,5]} & \Sexpr{catD[4,6]}/\Sexpr{catND[4,6]} & \Sexpr{catD[4,7]}/\Sexpr{catND[4,7]} & \Sexpr{catD[4,8]}/\Sexpr{catND[4,8]} && \Sexpr{row_total[4,1]}/\Sexpr{row_total[4,2]} \\ 
+		 
+5 &&   \Sexpr{catD[5,1]}/\Sexpr{catND[5,1]}  & \Sexpr{catD[5,2]}/\Sexpr{catND[5,2]} & \Sexpr{catD[5,3]}/\Sexpr{catND[5,3]} & \Sexpr{catD[5,4]}/\Sexpr{catND[5,4]}  & \Sexpr{catD[5,5]}/\Sexpr{catND[5,5]} & \Sexpr{catD[5,6]}/\Sexpr{catND[5,6]} & \Sexpr{catD[5,7]}/\Sexpr{catND[5,7]} & \Sexpr{catD[5,8]}/\Sexpr{catND[5,8]} && \Sexpr{row_total[5,1]}/\Sexpr{row_total[5,2]} \\ 
+		 
+6 &&   \Sexpr{catD[6,1]}/\Sexpr{catND[6,1]}  & \Sexpr{catD[6,2]}/\Sexpr{catND[6,2]} & \Sexpr{catD[6,3]}/\Sexpr{catND[6,3]} & \Sexpr{catD[6,4]}/\Sexpr{catND[6,4]}  & \Sexpr{catD[6,5]}/\Sexpr{catND[6,5]} & \Sexpr{catD[6,6]}/\Sexpr{catND[6,6]} & \Sexpr{catD[6,7]}/\Sexpr{catND[6,7]} & \Sexpr{catD[6,8]}/\Sexpr{catND[6,8]} && \Sexpr{row_total[6,1]}/\Sexpr{row_total[6,2]} \\ 
+		 
+7 &&   \Sexpr{catD[7,1]}/\Sexpr{catND[7,1]}  & \Sexpr{catD[7,2]}/\Sexpr{catND[7,2]} & \Sexpr{catD[7,3]}/\Sexpr{catND[7,3]} & \Sexpr{catD[7,4]}/\Sexpr{catND[7,4]}  & \Sexpr{catD[7,5]}/\Sexpr{catND[7,5]} & \Sexpr{catD[7,6]}/\Sexpr{catND[7,6]} & \Sexpr{catD[7,7]}/\Sexpr{catND[7,7]} & \Sexpr{catD[7,8]}/\Sexpr{catND[7,8]} && \Sexpr{row_total[7,1]}/\Sexpr{row_total[7,2]} \\ 
+		 
+	
+8 &&   \Sexpr{catD[8,1]}/\Sexpr{catND[8,1]}  & \Sexpr{catD[8,2]}/\Sexpr{catND[8,2]} & \Sexpr{catD[8,3]}/\Sexpr{catND[8,3]} & \Sexpr{catD[8,4]}/\Sexpr{catND[8,4]}  & \Sexpr{catD[8,5]}/\Sexpr{catND[8,5]} & \Sexpr{catD[8,6]}/\Sexpr{catND[8,6]} & \Sexpr{catD[8,7]}/\Sexpr{catND[8,7]} & \Sexpr{catD[8,8]}/\Sexpr{catND[8,8]} && \Sexpr{row_total[8,1]}/\Sexpr{row_total[8,2]} \\ 
+		 
+9 &&   \Sexpr{catD[9,1]}/\Sexpr{catND[9,1]}  & \Sexpr{catD[9,2]}/\Sexpr{catND[9,2]} & \Sexpr{catD[9,3]}/\Sexpr{catND[9,3]} & \Sexpr{catD[9,4]}/\Sexpr{catND[9,4]}  & \Sexpr{catD[9,5]}/\Sexpr{catND[9,5]} & \Sexpr{catD[9,6]}/\Sexpr{catND[9,6]} & \Sexpr{catD[9,7]}/\Sexpr{catND[9,7]} & \Sexpr{catD[9,8]}/\Sexpr{catND[9,8]} && \Sexpr{row_total[9,1]}/\Sexpr{row_total[9,2]} \\ 
+		
+10 &&   \Sexpr{catD[10,1]}/\Sexpr{catND[10,1]}  & \Sexpr{catD[10,2]}/\Sexpr{catND[10,2]} & \Sexpr{catD[10,3]}/\Sexpr{catND[10,3]} & \Sexpr{catD[10,4]}/\Sexpr{catND[10,4]}  & \Sexpr{catD[10,5]}/\Sexpr{catND[10,5]} & \Sexpr{catD[10,6]}/\Sexpr{catND[10,6]} & \Sexpr{catD[10,7]}/\Sexpr{catND[10,7]} & \Sexpr{catD[10,8]}/\Sexpr{catND[10,8]} && \Sexpr{row_total[10,1]}/\Sexpr{row_total[10,2]} \\ 
+		 
+11 &&   \Sexpr{catD[11,1]}/\Sexpr{catND[11,1]}  & \Sexpr{catD[11,2]}/\Sexpr{catND[11,2]} & \Sexpr{catD[11,3]}/\Sexpr{catND[11,3]} & \Sexpr{catD[11,4]}/\Sexpr{catND[11,4]}  & \Sexpr{catD[11,5]}/\Sexpr{catND[11,5]} & \Sexpr{catD[11,6]}/\Sexpr{catND[11,6]} & \Sexpr{catD[11,7]}/\Sexpr{catND[11,7]} & \Sexpr{catD[11,8]}/\Sexpr{catND[11,8]} && \Sexpr{row_total[11,1]}/\Sexpr{row_total[11,2]} \\ 
+		 
+12 &&   \Sexpr{catD[12,1]}/\Sexpr{catND[12,1]}  & \Sexpr{catD[12,2]}/\Sexpr{catND[12,2]} & \Sexpr{catD[12,3]}/\Sexpr{catND[12,3]} & \Sexpr{catD[12,4]}/\Sexpr{catND[12,4]}  & \Sexpr{catD[12,5]}/\Sexpr{catND[12,5]} & \Sexpr{catD[12,6]}/\Sexpr{catND[12,6]} & \Sexpr{catD[12,7]}/\Sexpr{catND[12,7]} & \Sexpr{catD[12,8]}/\Sexpr{catND[12,8]} && \Sexpr{row_total[12,1]}/\Sexpr{row_total[12,2]} \\ 
+		 
+13 &&   \Sexpr{catD[13,1]}/\Sexpr{catND[13,1]}  & \Sexpr{catD[13,2]}/\Sexpr{catND[13,2]} & \Sexpr{catD[13,3]}/\Sexpr{catND[13,3]} & \Sexpr{catD[13,4]}/\Sexpr{catND[13,4]}  & \Sexpr{catD[13,5]}/\Sexpr{catND[13,5]} & \Sexpr{catD[13,6]}/\Sexpr{catND[13,6]} & \Sexpr{catD[13,7]}/\Sexpr{catND[13,7]} & \Sexpr{catD[13,8]}/\Sexpr{catND[13,8]} && \Sexpr{row_total[13,1]}/\Sexpr{row_total[13,2]} \\ 
+		 
+Total  && \Sexpr{column_totalD[1]}/\Sexpr{column_totalND[1]} & \Sexpr{column_totalD[2]}/\Sexpr{column_totalND[2]} & \Sexpr{column_totalD[3]}/\Sexpr{column_totalND[3]} & \Sexpr{column_totalD[4]}/\Sexpr{column_totalND[4]} & \Sexpr{column_totalD[5]}/\Sexpr{column_totalND[5]} & \Sexpr{column_totalD[6]}/\Sexpr{column_totalND[6]} & \Sexpr{column_totalD[7]}/\Sexpr{column_totalND[7]} & \Sexpr{column_totalD[8]}/\Sexpr{column_totalND[8]} && \Sexpr{sum(column_totalD)}/\Sexpr{sum(column_totalND)}\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+<<table3, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE>>=
+cut7 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==7, weights = ss)
+cut7s <- summary(cut7)
+cut8 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==8, weights = ss)
+cut8s <- summary(cut8)
+cut9 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==9, weights = ss)
+cut9s <- summary(cut9)
+cut10 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==10, weights = ss)
+cut10s <- summary(cut10)
+cut11 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==11, weights = ss)
+cut11s <- summary(cut11)
+cut12 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==12, weights = ss)
+cut12s <- summary(cut12)
+cut13 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==13, weights = ss)
+cut13s <- summary(cut13)
+cut14 <- glmer(prop ~ -1 + d0 + d1 + (-1 + d0 + d1|study), family = binomial, nAGQ = 1, data = Bdata, subset = cutoff==14, weights = ss)
+cut14s <- summary(cut14)
+
+# logit sensitivity and 1-specificity, standarho_dis error logit sensitivity, standard error logit specificity for thresholds 7 to 14
+logit_sens_bivariate <- round(c(fixef(cut7)[2], fixef(cut8)[2], fixef(cut9)[2], fixef(cut10)[2], fixef(cut11)[2], fixef(cut12)[2], fixef(cut13)[2], fixef(cut14)[2]), 2)
+
+logit_1_spec_bivariate <- format(round(c(fixef(cut7)[1], fixef(cut8)[1], fixef(cut9)[1], fixef(cut10)[1], fixef(cut11)[1], fixef(cut12)[1], fixef(cut13)[1], fixef(cut14)[1]), 2), nsmall=2)
+
+sd_logit_sens_bivariate <- format(round(c(cut7s$coef[2,2], cut8s$coef[2,2], cut9s$coef[2,2], cut10s$coef[2,2], cut11s$coef[2,2], cut12s$coef[2,2], cut13s$coef[2,2], cut14s$coef[2,2]), 2), nsmall=2)
+
+sd_logit_1_spec_bivariate  <- round(c(cut7s$coef[1,2], cut8s$coef[1,2], cut9s$coef[1,2], cut10s$coef[1,2], cut11s$coef[1,2], cut12s$coef[1,2], cut13s$coef[1,2], cut14s$coef[1,2]), 2)
+
+corr <- format(round(c(cut7s$varcor$study[3]/(sqrt(cut7s$varcor$study[1])*sqrt(cut7s$varcor$study[4])), cut8s$varcor$study[3]/(sqrt(cut8s$varcor$study[1])*sqrt(cut8s$varcor$study[4])), cut9s$varcor$study[3]/(sqrt(cut9s$varcor$study[1])*sqrt(cut9s$varcor$study[4])), cut10s$varcor$study[3]/(sqrt(cut10s$varcor$study[1])*sqrt(cut10s$varcor$study[4])), cut11s$varcor$study[3]/(sqrt(cut11s$varcor$study[1])*sqrt(cut11s$varcor$study[4])), cut12s$varcor$study[3]/(sqrt(cut12s$varcor$study[1])*sqrt(cut12s$varcor$study[4])), cut13s$varcor$study[3]/(sqrt(cut13s$varcor$study[1])*sqrt(cut13s$varcor$study[4])), cut14s$varcor$study[3]/(sqrt(cut14s$varcor$study[1])*sqrt(cut14s$varcor$study[4]))), 2), nsmall=2)
+@
+
+	
+% TABLE 3
+\begin{table}[!htbp]
+\renewcommand\thetable{3}
+\caption{Parameter estimates (standard errors) obtained by the bivariate approach}
+\centering
+\begin{tabular}{llll|l}
+\toprule
+&& Logit & Logit & Correlations\\
+Threshold&&(sensitivity)&(1-specificity)&$\rho_T$\\
+\midrule
+7 && \Sexpr{logit_sens_bivariate[1]} (\Sexpr{sd_logit_sens_bivariate[1]}) & \Sexpr{logit_1_spec_bivariate[1]} (\Sexpr{sd_logit_1_spec_bivariate[1]}) & \Sexpr{corr[1]} \\
+
+8 && \Sexpr{logit_sens_bivariate[2]} (\Sexpr{sd_logit_sens_bivariate[2]}) & \Sexpr{logit_1_spec_bivariate[2]} (\Sexpr{sd_logit_1_spec_bivariate[2]}) & \Sexpr{corr[2]} \\
+
+9 && \Sexpr{logit_sens_bivariate[3]} (\Sexpr{sd_logit_sens_bivariate[3]}) & \Sexpr{logit_1_spec_bivariate[3]} (\Sexpr{sd_logit_1_spec_bivariate[3]}) & \Sexpr{corr[3]} \\
+
+10 && \Sexpr{logit_sens_bivariate[4]} (\Sexpr{sd_logit_sens_bivariate[4]}) & \Sexpr{logit_1_spec_bivariate[4]} (\Sexpr{sd_logit_1_spec_bivariate[4]}) & \Sexpr{corr[4]} \\
+
+11 && \Sexpr{logit_sens_bivariate[5]} (\Sexpr{sd_logit_sens_bivariate[5]}) & \Sexpr{logit_1_spec_bivariate[5]} (\Sexpr{sd_logit_1_spec_bivariate[5]}) & \Sexpr{corr[5]} \\
+
+12 && \Sexpr{logit_sens_bivariate[6]} (\Sexpr{sd_logit_sens_bivariate[6]}) & \Sexpr{logit_1_spec_bivariate[6]} (\Sexpr{sd_logit_1_spec_bivariate[6]}) & \Sexpr{corr[6]} \\
+
+13 && \Sexpr{logit_sens_bivariate[7]} (\Sexpr{sd_logit_sens_bivariate[7]}) & \Sexpr{logit_1_spec_bivariate[7]} (\Sexpr{sd_logit_1_spec_bivariate[7]}) & \Sexpr{corr[7]} \\
+
+14 && \Sexpr{logit_sens_bivariate[8]} (\Sexpr{sd_logit_sens_bivariate[8]}) & \Sexpr{logit_1_spec_bivariate[8]} (\Sexpr{sd_logit_1_spec_bivariate[8]}) & \Sexpr{corr[8]} \\
+\bottomrule
+\multicolumn{5}{l}{\scalebox{0.8}{For thresholds $j=7,..,14$, $\text{sensitivity}_j$=expit(Logit $\text{sensitivity}_j$) and }}\\
+\multicolumn{5}{l}{\scalebox{0.8}{$\text{specificity}_j$=1-expit(Logit ($1-\text{specificity}_j$)).}}
+\end{tabular}
+\end{table}
+
+<<table5, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE>>=
+Pois_pestimates <- poissonModel(Pdata)
+
+# set up the data to estimate rho_thres and rho_dis: keep only information threshold 7 to 14
+Pdata$lam <- c(rep(Pois_pestimates$lambda1,13), rep(Pois_pestimates$lambda0,13))
+Pdata$mu <- Pdata$r*Pdata$lam
+Pdata2 <- Pdata[which(Pdata$cutoff %in% 7:14),]
+
+# stabilize estimation of rho_thres (but less valid...)
+Pdata2$y <- ceiling(Pdata2$y)
+Pdata2$r <- ceiling(Pdata2$r)
+
+# estimate the correlation parameter rho_thres
+#rho_thres <- optimize(rho_thres_estimation, interval = c(0.01,0.99), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2, maximum = TRUE)$maximum
+rho_thres <- 0.54
+  
+# estimate the correlation parameter rho_dis
+#ab <- optimize(rho_dis_estimation, interval = c(0, sqrt(1/Pois_pestimates$frailty1*1/Pois_pestimates$frailty0)), th1 = 1/Pois_pestimates$frailty1, th0 = 1/Pois_pestimates$frailty0, data = Pdata2, maximum = TRUE)$maximum
+#rho_dis <- ab*sqrt(Pois_pestimates$frailty1*Pois_pestimates$frailty0)
+rho_dis <- 0.29
+  
+# standard error from parametric bootstrap
+results_SE <- read.csv("/Users/gabriellesimoneau/Dropbox/article - Master/Biometrical/presentableRcode/RcodeGIT_IPDMAcomparison/Results/parametric_boot_example.csv")
+results_SE <- results_SE[,-1]
+
+# estimates hazard, frailty variance 
+hazards_diseased <- format(round(Pois_pestimates$lambda1, 2), nsmall=2)
+hazards_healthy <- format(round(Pois_pestimates$lambda0, 2), nsmall=2)
+frailty_variance_1 <- format(round(Pois_pestimates$frailty1, 2), nsmall=2)
+frailty_variance_0 <- format(round(Pois_pestimates$frailty0, 2), nsmall=2)
+
+# their SE
+SE_hazard_diseased <- format(round(apply(results_SE[,1:8], 2, sd), 3), nsmall=3)
+SE_hazard_healthy <- format(round(apply(results_SE[,9:16], 2, sd), 3), nsmall=3)
+SE_variance_frailty_1 <- format(round(sd(results_SE[,17]), 2), nsmall=2)
+SE_variance_frailty_0 <- format(round(sd(results_SE[,18]), 2), nsmall=2)
+SE_rho_thres <- format(round(sd(results_SE[,19]), 2), nsmall=2)
+SE_rho_dis <- format(round(sd(results_SE[,20]), 2), nsmall=2)
+@
+
+
+% TABLE 5
+\begin{table}[!htbp]
+\renewcommand\thetable{5}
+\caption{Parameter estimates (standard errors) obtained by the Poisson approach}
+\centering
+\begin{tabular}{lll|ll|ll}
+\toprule
+& Hazards & Hazards & \multicolumn{2}{c}{Frailty} & & \\
+Threshold & Diseased & Healthy & \multicolumn{2}{c}{Variances} & \multicolumn{2}{c}{Correlations}\\
+\midrule
+7 & \Sexpr{hazards_diseased[7]} (\Sexpr{SE_hazard_diseased[1]}) & \Sexpr{hazards_healthy[7]} (\Sexpr{SE_hazard_healthy[1]}) & $\xi^1$ & \Sexpr{frailty_variance_1} (\Sexpr{SE_variance_frailty_1}) & $\rho_{\text{thres}}$ & \Sexpr{rho_thres} (\Sexpr{SE_rho_thres})\\
+8 &  \Sexpr{hazards_diseased[8]} (\Sexpr{SE_hazard_diseased[2]}) & \Sexpr{hazards_healthy[8]} (\Sexpr{SE_hazard_healthy[2]}) & $\xi^0$ & \Sexpr{frailty_variance_0} (\Sexpr{SE_variance_frailty_0}) & $\rho_{\text{dis}}$ & \Sexpr{rho_dis} (\Sexpr{SE_rho_dis})\\
+9 & \Sexpr{hazards_diseased[9]} (\Sexpr{SE_hazard_diseased[3]}) & \Sexpr{hazards_healthy[9]} (\Sexpr{SE_hazard_healthy[3]}) & &&&\\
+10 & \Sexpr{hazards_diseased[10]} (\Sexpr{SE_hazard_diseased[4]}) & \Sexpr{hazards_healthy[10]} (\Sexpr{SE_hazard_healthy[4]}) & &&&\\
+11 & \Sexpr{hazards_diseased[11]} (\Sexpr{SE_hazard_diseased[5]}) & \Sexpr{hazards_healthy[11]} (\Sexpr{SE_hazard_healthy[5]}) & &&&\\
+12 & \Sexpr{hazards_diseased[12]} (\Sexpr{SE_hazard_diseased[6]}) & \Sexpr{hazards_healthy[12]} (\Sexpr{SE_hazard_healthy[6]}) & &&&\\
+13 & \Sexpr{hazards_diseased[13]} (\Sexpr{SE_hazard_diseased[7]}) & \Sexpr{hazards_healthy[13]} (\Sexpr{SE_hazard_healthy[7]}) & &&&\\
+14 & \Sexpr{hazards_diseased[14]} (\Sexpr{SE_hazard_diseased[8]}) & \Sexpr{hazards_healthy[14]} (\Sexpr{SE_hazard_healthy[8]}) & &&&\\
+\bottomrule
+\multicolumn{7}{l}{\scalebox{0.8}{For thresholds $j=7,..,14$, $\text{sensitivity}_j=\prod_{k=1}^j (1-\text{Hazard Diseased}_k$) and $\text{sensitivity}_j=1 - \prod_{k=1}^j (1-$}}\\
+\multicolumn{7}{l}{\scalebox{0.8}{$\text{Hazard Healthy}_k$).}}
+\end{tabular}
+\end{table}
+
+<<table2, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE>>=
+## first two columns: results from the Bivariate approach
+# extract pooled sensitivity, pooled specificity for thresholds 7 to 14
+pooled_specificity_bivariate <- format(round(c(expit(-fixef(cut7)[1]), expit(-fixef(cut8)[1]), expit(-fixef(cut9)[1]), expit(-fixef(cut10)[1]), expit(-fixef(cut11)[1]), expit(-fixef(cut12)[1]), expit(-fixef(cut13)[1]), expit(-fixef(cut14)[1])), 2), nsmall=2)
+pooled_sensitivity_bivariate <- format(round(c(expit(fixef(cut7)[2]), expit(fixef(cut8)[2]), expit(fixef(cut9)[2]), expit(fixef(cut10)[2]), expit(fixef(cut11)[2]), expit(fixef(cut12)[2]), expit(fixef(cut13)[2]), expit(fixef(cut14)[2])), 2), nsmall=2)
+
+# confidence intervals
+CI.sens.L <- format(round(c(expit(as.numeric(logit_sens_bivariate) - 1.96*as.numeric(sd_logit_sens_bivariate))), 2), nsmall=2)
+CI.sens.U <- format(round(c(expit(as.numeric(logit_sens_bivariate) + 1.96*as.numeric(sd_logit_sens_bivariate))), 2), nsmall=2)
+CI.spec.U <- format(round(1-c(expit(as.numeric(logit_1_spec_bivariate) - 1.96*as.numeric(sd_logit_1_spec_bivariate))), 2), nsmall=2)
+CI.spec.L <- format(round(1-c(expit(as.numeric(logit_1_spec_bivariate) + 1.96*as.numeric(sd_logit_1_spec_bivariate))), 2), nsmall=2)
+
+## last two columns: results from the Poisson approach
+# extract pooled sensitivity, pooled specificity for thresholds 7 to 14
+pooled_specificity_poisson <- Pois_pestimates$pooled_specificity
+pooled_sensitivity_poisson <- format(Pois_pestimates$pooled_sensitivity, nsmall=2)
+SE_pooled_spec_poisson <- format(round(apply(results_SE[,29:36], 2, sd), 2), nsmall=2)
+SE_pooled_sens_poisson <- round(apply(results_SE[,21:28], 2, sd), 2)
+
+# confidence intervals
+CI.sens_poisson.L <- round(as.numeric(pooled_sensitivity_poisson) - 1.96*SE_pooled_sens_poisson, 2)
+CI.sens_poisson.U <- round(as.numeric(pooled_sensitivity_poisson) + 1.96*SE_pooled_sens_poisson, 2)
+CI.spec_poisson.L <- round(pooled_specificity_poisson - 1.96*as.numeric(SE_pooled_spec_poisson), 2)
+CI.spec_poisson.U <- format(round(pooled_specificity_poisson + 1.96*as.numeric(SE_pooled_spec_poisson), 2), nsmall=2)
+
+@
+
+
+% TABLE 2
+\begin{sidewaystable}[!h]
+\renewcommand\thetable{2}
+\caption{Estimates (95\% CI) of the pooled sensitivity and specificity from the three methods}
+\centering
+\begin{tabular}{lllllllll}
+\toprule
+&\multicolumn{2}{c}{Bivariate approach}&&\multicolumn{2}{c}{Ordinal approach}&&\multicolumn{2}{c}{Poisson approach}\\
+\cmidrule{2-3}\cmidrule{5-6}\cmidrule{8-9}
+Threshold & Sensitivity & Specificity && Sensitivity & Specificity && Sensitivity & Specificity \\
+\midrule
+7 & \Sexpr{pooled_sensitivity_bivariate[1]} (\Sexpr{CI.sens.L[1]}-\Sexpr{CI.sens.U[1]}) & \Sexpr{pooled_specificity_bivariate[1]} (\Sexpr{CI.spec.L[1]}-\Sexpr{CI.spec.U[1]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[1]} (\Sexpr{CI.sens_poisson.L[1]}-\Sexpr{CI.sens_poisson.U[1]}) & \Sexpr{pooled_specificity_poisson[1]} (\Sexpr{CI.spec_poisson.L[1]}-\Sexpr{CI.spec_poisson.U[1]}) \\
+
+
+8 & \Sexpr{pooled_sensitivity_bivariate[2]} (\Sexpr{CI.sens.L[2]}-\Sexpr{CI.sens.U[2]}) & \Sexpr{pooled_specificity_bivariate[2]} (\Sexpr{CI.spec.L[2]}-\Sexpr{CI.spec.U[2]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[2]} (\Sexpr{CI.sens_poisson.L[2]}-\Sexpr{CI.sens_poisson.U[2]}) & \Sexpr{pooled_specificity_poisson[2]} (\Sexpr{CI.spec_poisson.L[2]}-\Sexpr{CI.spec_poisson.U[2]})  \\
+
+9 & \Sexpr{pooled_sensitivity_bivariate[3]} (\Sexpr{CI.sens.L[3]}-\Sexpr{CI.sens.U[3]}) & \Sexpr{pooled_specificity_bivariate[3]} (\Sexpr{CI.spec.L[3]}-\Sexpr{CI.spec.U[3]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[3]} (\Sexpr{CI.sens_poisson.L[3]}-\Sexpr{CI.sens_poisson.U[3]}) & \Sexpr{pooled_specificity_poisson[3]} (\Sexpr{CI.spec_poisson.L[3]}-\Sexpr{CI.spec_poisson.U[3]})  \\
+
+10 & \Sexpr{pooled_sensitivity_bivariate[4]} (\Sexpr{CI.sens.L[4]}-\Sexpr{CI.sens.U[4]}) & \Sexpr{pooled_specificity_bivariate[4]} (\Sexpr{CI.spec.L[4]}-\Sexpr{CI.spec.U[4]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[4]} (\Sexpr{CI.sens_poisson.L[4]}-\Sexpr{CI.sens_poisson.U[4]}) & \Sexpr{pooled_specificity_poisson[4]} (\Sexpr{CI.spec_poisson.L[4]}-\Sexpr{CI.spec_poisson.U[4]})  \\
+
+11 &\Sexpr{pooled_sensitivity_bivariate[5]} (\Sexpr{CI.sens.L[5]}-\Sexpr{CI.sens.U[5]}) & \Sexpr{pooled_specificity_bivariate[5]} (\Sexpr{CI.spec.L[5]}-\Sexpr{CI.spec.U[5]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[5]} (\Sexpr{CI.sens_poisson.L[5]}-\Sexpr{CI.sens_poisson.U[5]}) & \Sexpr{pooled_specificity_poisson[5]} (\Sexpr{CI.spec_poisson.L[5]}-\Sexpr{CI.spec_poisson.U[5]})  \\
+
+12 & \Sexpr{pooled_sensitivity_bivariate[6]} (\Sexpr{CI.sens.L[6]}-\Sexpr{CI.sens.U[6]}) & \Sexpr{pooled_specificity_bivariate[6]} (\Sexpr{CI.spec.L[6]}-\Sexpr{CI.spec.U[6]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[6]} (\Sexpr{CI.sens_poisson.L[6]}-\Sexpr{CI.sens_poisson.U[6]}) & \Sexpr{pooled_specificity_poisson[6]} (\Sexpr{CI.spec_poisson.L[6]}-\Sexpr{CI.spec_poisson.U[6]})  \\
+
+13 & \Sexpr{pooled_sensitivity_bivariate[7]} (\Sexpr{CI.sens.L[7]}-\Sexpr{CI.sens.U[7]}) & \Sexpr{pooled_specificity_bivariate[7]} (\Sexpr{CI.spec.L[7]}-\Sexpr{CI.spec.U[7]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[7]} (\Sexpr{CI.sens_poisson.L[7]}-\Sexpr{CI.sens_poisson.U[7]}) & \Sexpr{pooled_specificity_poisson[7]} (\Sexpr{CI.spec_poisson.L[7]}-\Sexpr{CI.spec_poisson.U[7]})  \\
+
+14 & \Sexpr{pooled_sensitivity_bivariate[8]} (\Sexpr{CI.sens.L[8]}-\Sexpr{CI.sens.U[8]}) & \Sexpr{pooled_specificity_bivariate[8]} (\Sexpr{CI.spec.L[8]}-\Sexpr{CI.spec.U[8]}) && NA  & NA && \Sexpr{pooled_sensitivity_poisson[8]} (\Sexpr{CI.sens_poisson.L[8]}-\Sexpr{CI.sens_poisson.U[8]}) & \Sexpr{pooled_specificity_poisson[8]} (\Sexpr{CI.spec_poisson.L[8]}-\Sexpr{CI.spec_poisson.U[8]})  \\
+
+\bottomrule
+\end{tabular}
+\end{sidewaystable}
+
+
+
+
+\end{document}
