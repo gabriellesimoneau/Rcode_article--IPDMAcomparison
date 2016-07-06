@@ -181,4 +181,4 @@ for(i in 13:16) # loop over scenarios
 files <-  list.files(pattern = "*.csv")
 all <- do.call(rbind, lapply(files, function(x) read.csv(x, stringsAsFactors = FALSE)))
 all$scenario <- rep(seq(1:16), each = 1000)
-write.csv(all, file = "poisson_all.csv")
+write.csv(all, file = "simulation_results_poisson.csv")
