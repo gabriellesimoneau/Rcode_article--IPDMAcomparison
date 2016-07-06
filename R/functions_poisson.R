@@ -15,7 +15,7 @@ poissonModel <- function(data)
   #       - n: total number of diseased subject if dis=1 or healthy subjects if dis=0 in that study
   
   #need to delete lines where r=0
-  data <- data[-which(data$r==0),]
+  if(nrow(data[which(data$r ==0),])>0) data <- data[-which(data$r==0),]
   
   # negative binomial models
   poisD <- data[which(data$dis==1),]
