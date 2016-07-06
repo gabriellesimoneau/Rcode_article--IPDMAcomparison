@@ -23,6 +23,9 @@ Results:
 * `Results_example_dataset.pdf` presents the resulting tables and figures as obtained using the example dataset.
 * `Results_example_dataset.Rnw` is the corresponding R Sweave file.
 
+The code has been written using `R-3.0.2` (platform: x86_64-apple-darwin10.8.0, 64-bit) with 
+package versions `mvtnorm_1.0-2`, `rje_1.9`, `copula_0.999-13`, `MASS_7.3-37` and `lme4_1.1-7`. 
+
 ## Data Analysis
 
 Reproduce Table 1-2-3-5 and Figure 1 as shown in `Results_example_dataset.pdf` by running all R code in the Data Analysis section of `tables_figures.R`.
@@ -33,4 +36,4 @@ Reproduce Table 6 and Figure 2-3 by running all R code in the Simulation section
 
 ## Support
 
-For questions, comments or remarks about the code please contact [Gabrielle Simoneau] (mailto:gabrielle.simoneau at mail.mcgill.ca)
+For questions, comments or remarks about the code please contact [Gabrielle Simoneau] (mailto:gabrielle.simoneau@mail.mcgill.ca).
