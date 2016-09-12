@@ -39,8 +39,8 @@ row_total <- matrix(NA, nrow = 13, ncol = 2) # total number of diseased/healtht 
 
 for(i in 1:13)
 {
-  D <- Pphq9[which(Pphq9$study==i & Pphq9$dis==1),]
-  ND <- Pphq9[which(Pphq9$study==i & Pphq9$dis==0), ]
+  D <- Pdata[which(Pdata$study==i & Pdata$dis==1),]
+  ND <- Pdata[which(Pdata$study==i & Pdata$dis==0), ]
   
   # diseased by category
   catD[i,] <- round(c(sum(D$y[1:8]), D$y[9:14], D$r[14]-D$y[14]), 0)

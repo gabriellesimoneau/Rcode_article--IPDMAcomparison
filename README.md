@@ -1,5 +1,5 @@
 # Rcode_article--IPDMAcomparison
-R code and support for article "A comparison of methods to meta-analyze individual patient data of diagnostic accuracy"
+R code and support for article "A comparison of bivariate, multivariate random-effects, and Poisson correlated gamma-frailty models to meta-analyze individual patient data of ordinal scale diagnostic tests"
 
 ## Description
 
